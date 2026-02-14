@@ -40,6 +40,7 @@ import messageSemaphoreRoutes from "./messageSemaphoreRoutes";
 import validationRoutes from "./validationRoutes";
 import userWhatsappQueueRoutes from "./userWhatsappQueueRoutes";
 import closedTicketHistoryRoutes from "./closedTicketHistoryRoutes";
+import flowChatRoutes from "./flowChatRoutes";
 const routes = Router();
 
 routes.use(userRoutes);
@@ -83,5 +84,6 @@ routes.use(messageSemaphoreRoutes);
 routes.use(validationRoutes);
 routes.use(userWhatsappQueueRoutes);
 routes.use(closedTicketHistoryRoutes);
+routes.use(flowChatRoutes);
 
 export default routes;

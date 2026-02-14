@@ -38,6 +38,8 @@ import Prompts from "../pages/Prompts";
 import QueueIntegration from "../pages/QueueIntegration";
 import ForgetPassword from "../pages/ForgetPassWord/"; // Reset PassWd
 import Asterisk from "../pages/Asterisk";
+import FlowChats from "../pages/FlowChats";
+import FlowBuilder from "../pages/FlowBuilder";
 
 const Routes = () => {
   const [showCampaigns, setShowCampaigns] = useState(false);
@@ -99,6 +101,8 @@ const Routes = () => {
                 <Route exact path="/prompts" component={Prompts} isPrivate />
                 <Route exact path="/queue-integration" component={QueueIntegration} isPrivate />
                 <Route exact path="/asterisk" component={Asterisk} isPrivate />
+                <Route exact path="/flow-chats" component={FlowChats} isPrivate />
+                <Route exact path="/flow-builder/:flowId" component={FlowBuilder} isPrivate />
 
                 <Route
                   exact

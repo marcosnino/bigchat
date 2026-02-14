@@ -850,6 +850,7 @@ const messages = {
 					files: "File List",
 					prompts: "Open.AI",
 					queueIntegration: "Integrations",
+					flowChats: "Automation Flows",
 				},
 				appBar: {
 					refresh: "Reload page",

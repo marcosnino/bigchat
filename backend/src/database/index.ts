@@ -41,6 +41,7 @@ import Asterisk from "../models/Asterisk";
 import Call from "../models/Call";
 import Extension from "../models/Extension";
 import ClosedTicketHistory from "../models/ClosedTicketHistory";
+import FlowChat from "../models/FlowChat";
 
 // eslint-disable-next-line
 const dbConfig = require("../config/database");
@@ -91,6 +92,7 @@ const models = [
   Call,
   Extension,
   ClosedTicketHistory,
+  FlowChat,
 ];
 
 sequelize.addModels(models);

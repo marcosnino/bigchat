@@ -42,6 +42,7 @@ import ToDoList from "../pages/ToDoList/";
 import toastError from "../errors/toastError";
 import { makeStyles } from "@material-ui/core/styles";
 import { AllInclusive, AttachFile, BlurCircular, DeviceHubOutlined, Schedule, Phone } from '@material-ui/icons';
+import AccountTreeIcon from '@material-ui/icons/AccountTree';
 import usePlans from "../hooks/usePlans";
 import Typography from "@material-ui/core/Typography";
 import useVersion from "../hooks/useVersion";
@@ -451,6 +452,11 @@ const MainListItems = (props) => {
                 icon={<DeviceHubOutlined />}
               />
             )}
+            <ListItemLink
+              to="/flow-chats"
+              primary={i18n.t("mainDrawer.listItems.flowChats")}
+              icon={<AccountTreeIcon />}
+            />
             <ListItemLink
               to="/connections"
               primary={i18n.t("mainDrawer.listItems.connections")}

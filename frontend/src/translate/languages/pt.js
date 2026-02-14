@@ -1021,6 +1021,7 @@ const messages = {
           files: "Lista de arquivos",
           prompts: "Open.Ai",
           queueIntegration: "Integrações",
+          flowChats: "Fluxos de Automação",
           asterisk: "VoIP / Asterisk",
         },
         appBar: {
