@@ -99,7 +99,21 @@ const QrcodeModal = ({ open, onClose, whatsAppId }) => {
           </div>
           <div>
             {qrCode ? (
-              <QRCode value={qrCode} size={256} />
+              // Se o QRCode é uma imagem base64/data URL, renderizar como <img>
+              // Senão, usar QRCode.react para gerar a imagem
+              qrCode.startsWith("data:") ? (
+                <img 
+                  src={qrCode} 
+                  alt="WhatsApp QRCode" 
+                  style={{ width: "300px", height: "300px" }} 
+                  onError={(e) => {
+                    console.error("Erro ao carregar imagem QRCode:", e);
+                    e.target.style.display = "none";
+                  }}
+                />
+              ) : (
+                <QRCode value={qrCode} size={256} />
+              )
             ) : (
               <span>{i18n.t("qrCodeModal.waiting")}</span>
             )}

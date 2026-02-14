@@ -13,6 +13,7 @@ import makeWASocket, {
 } from "./baileysmock_fixed";
 import authState from "../helpers/authState";
 import P from "pino";
+import * as QRCode from "qrcode";
 
 import Whatsapp from "../models/Whatsapp";
 import { logger } from "../utils/logger";
@@ -229,8 +230,18 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
                 logger.info(`Session QRCode Generate ${name}`);
                 retriesQrCodeMap.set(id, (retriesQrCode += 1));
 
+                // ─ Converter QRCode para base64 renderizável ─
+                let qrcodeDataUrl = "";
+                try {
+                  qrcodeDataUrl = await QRCode.toDataURL(qr);
+                  logger.info(`QRCode convertido para base64 (${qrcodeDataUrl.length} bytes)`);
+                } catch (qrErr) {
+                  logger.warn(`Erro ao converter QRCode para base64: ${qrErr}`);
+                  qrcodeDataUrl = qr;
+                }
+
                 await whatsapp.update({
-                  qrcode: qr,
+                  qrcode: qrcodeDataUrl,
                   status: "qrcode",
                   retries: 0
                 });

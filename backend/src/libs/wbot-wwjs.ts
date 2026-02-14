@@ -21,6 +21,7 @@ import {
 import * as Sentry from "@sentry/node";
 import path from "path";
 import fs from "fs";
+import * as QRCode from "qrcode";
 
 import Whatsapp from "../models/Whatsapp";
 import { logger } from "../utils/logger";
@@ -253,9 +254,20 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<WWJSSession> => 
         }
 
         try {
-          // Salvar QR como texto puro — frontend usa qrcode.react para renderizar
+          // ─ Converter QRCode token para base64 renderizável ─
+          let qrcodeDataUrl = "";
+          try {
+            qrcodeDataUrl = await QRCode.toDataURL(qr);
+            logger.info(`[WWJS] QRCode convertido para base64 (${qrcodeDataUrl.length} bytes)`);
+          } catch (qrErr) {
+            logger.warn(`[WWJS] Erro ao converter QRCode para base64: ${qrErr}`);
+            // Fallback: usar a string original se conversão falhar
+            qrcodeDataUrl = qr;
+          }
+
+          // Salvar QR como base64 renderizável
           await whatsapp.update({
-            qrcode: qr,
+            qrcode: qrcodeDataUrl,
             status: "qrcode",
             retries
           });
