@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "strict": false,
+    "strictPropertyInitialization": false,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmitOnError": false
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/libs/wbot.ts",
+    "src/libs/baileysmock_fixed.ts",
+    "src/helpers/authState.ts",
+    "src/services/WbotServices/wbotMessageListener.ts",
+    "src/services/WbotServices/StartWhatsAppSession.ts",
+    "src/services/WbotServices/SendWhatsAppMessage.ts",
+    "src/services/WbotServices/SendWhatsAppMedia.ts"
+  ]
+}
