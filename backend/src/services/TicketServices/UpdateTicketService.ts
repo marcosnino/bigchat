@@ -20,6 +20,7 @@ import { Op } from "sequelize";
 import AppError from "../../errors/AppError";
 import Company from "../../models/Company";
 import ClosedTicketHistoryService from "./ClosedTicketHistoryService";
+import MessageSemaphoreService from "../MessageServices/MessageSemaphoreService";
 
 interface TicketData {
   status?: string;
@@ -175,7 +176,7 @@ const UpdateTicketService = async ({
         await ClosedTicketHistoryService.recordTicketClosure(
           ticket.id,
           {
-            ...ticket.dataValues,
+            ...(ticket as any).dataValues,
             closedByUserId: actionUserId || ticket.userId,
             messages: []
           },

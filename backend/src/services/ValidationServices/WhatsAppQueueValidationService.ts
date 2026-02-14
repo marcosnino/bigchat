@@ -330,7 +330,7 @@ class WhatsAppQueueValidationService {
       });
 
       for (const connection of orphanConnections) {
-        if (!connection.Whatsapp || !connection.Queue) {
+        if (!(connection as any).Whatsapp || !(connection as any).Queue) {
           try {
             await connection.destroy();
             result.removed++;

@@ -1,3 +1,4 @@
+import { Op, fn, col } from "sequelize";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import Whatsapp from "../../models/Whatsapp";
@@ -194,7 +195,7 @@ class MessageSemaphoreService {
       const stats = await Message.findAll({
         attributes: [
           'messageStatus',
-          [Message.sequelize!.fn('COUNT', Message.sequelize!.col('id')), 'count']
+          [fn('COUNT', col('id')), 'count']
         ],
         where: {
           ticketId,
@@ -233,7 +234,7 @@ class MessageSemaphoreService {
           ticketId,
           fromMe: false,
           messageStatus: 'replied',
-          responseTime: { [Message.sequelize!.Op.not]: null }
+          responseTime: { [Op.not]: null }
         }
       });
 
@@ -274,7 +275,7 @@ class MessageSemaphoreService {
       const messageStats = await Message.findAll({
         attributes: [
           'messageStatus',
-          [Message.sequelize!.fn('COUNT', Message.sequelize!.col('id')), 'count']
+          [fn('COUNT', col('id')), 'count']
         ],
         where: {
           companyId,
@@ -288,7 +289,7 @@ class MessageSemaphoreService {
       const ticketsWithPending = await Ticket.count({
         where: {
           companyId,
-          pendingClientMessages: { [Ticket.sequelize!.Op.gt]: 0 }
+          pendingClientMessages: { [Op.gt]: 0 }
         }
       });
 
@@ -322,7 +323,7 @@ class MessageSemaphoreService {
           companyId,
           fromMe: false,
           messageStatus: 'replied',
-          responseTime: { [Message.sequelize!.Op.not]: null }
+          responseTime: { [Op.not]: null }
         },
         limit: 1000, // Limitar para performance
         order: [['createdAt', 'DESC']]

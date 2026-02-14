@@ -7,7 +7,7 @@
  * @version 1.0.0
  */
 
-import { Op } from "sequelize";
+import { Op, fn, col } from "sequelize";
 import ClosedTicketHistory from "../../models/ClosedTicketHistory";
 import User from "../../models/User";
 import Contact from "../../models/Contact";
@@ -245,7 +245,7 @@ class ClosedTicketHistoryService {
         ClosedTicketHistory.sum("totalMessages", { where }),
         ClosedTicketHistory.findAll({
           attributes: [
-            [ClosedTicketHistory.sequelize.fn("AVG", ClosedTicketHistory.sequelize.col("rating")), "avgRating"]
+            [fn("AVG", col("rating")), "avgRating"]
           ],
           where,
           raw: true
@@ -256,8 +256,8 @@ class ClosedTicketHistoryService {
       const byQueue = await ClosedTicketHistory.findAll({
         attributes: [
           "queueId",
-          [ClosedTicketHistory.sequelize.fn("COUNT", ClosedTicketHistory.sequelize.col("id")), "total"],
-          [ClosedTicketHistory.sequelize.fn("AVG", ClosedTicketHistory.sequelize.col("durationSeconds")), "avgTime"]
+          [fn("COUNT", col("id")), "total"],
+          [fn("AVG", col("durationSeconds")), "avgTime"]
         ],
         where,
         include: [
@@ -276,8 +276,8 @@ class ClosedTicketHistoryService {
       const byWhatsapp = await ClosedTicketHistory.findAll({
         attributes: [
           "whatsappId",
-          [ClosedTicketHistory.sequelize.fn("COUNT", ClosedTicketHistory.sequelize.col("id")), "total"],
-          [ClosedTicketHistory.sequelize.fn("AVG", ClosedTicketHistory.sequelize.col("durationSeconds")), "avgTime"]
+          [fn("COUNT", col("id")), "total"],
+          [fn("AVG", col("durationSeconds")), "avgTime"]
         ],
         where,
         include: [
@@ -296,8 +296,8 @@ class ClosedTicketHistoryService {
       const byUser = await ClosedTicketHistory.findAll({
         attributes: [
           "userId",
-          [ClosedTicketHistory.sequelize.fn("COUNT", ClosedTicketHistory.sequelize.col("id")), "total"],
-          [ClosedTicketHistory.sequelize.fn("AVG", ClosedTicketHistory.sequelize.col("durationSeconds")), "avgTime"]
+          [fn("COUNT", col("id")), "total"],
+          [fn("AVG", col("durationSeconds")), "avgTime"]
         ],
         where,
         include: [
@@ -318,8 +318,8 @@ class ClosedTicketHistoryService {
 
       const byDay = await ClosedTicketHistory.findAll({
         attributes: [
-          [ClosedTicketHistory.sequelize.fn("DATE", ClosedTicketHistory.sequelize.col("ticketClosedAt")), "date"],
-          [ClosedTicketHistory.sequelize.fn("COUNT", ClosedTicketHistory.sequelize.col("id")), "total"]
+          [fn("DATE", col("ticketClosedAt")), "date"],
+          [fn("COUNT", col("id")), "total"]
         ],
         where: {
           ...where,
@@ -327,8 +327,8 @@ class ClosedTicketHistoryService {
             [Op.gte]: thirtyDaysAgo
           }
         },
-        group: [ClosedTicketHistory.sequelize.fn("DATE", ClosedTicketHistory.sequelize.col("ticketClosedAt"))],
-        order: [[ClosedTicketHistory.sequelize.fn("DATE", ClosedTicketHistory.sequelize.col("ticketClosedAt")), "ASC"]],
+        group: [fn("DATE", col("ticketClosedAt"))],
+        order: [[fn("DATE", col("ticketClosedAt")), "ASC"]],
         raw: true,
         subQuery: false
       });
@@ -338,7 +338,7 @@ class ClosedTicketHistoryService {
         totalTime: totalTime || 0,
         averageTime: total > 0 ? Math.floor((totalTime || 0) / total) : 0,
         totalMessages: messageCount || 0,
-        averageRating: avgRating?.[0]?.avgRating || 0,
+        averageRating: (avgRating as any)?.[0]?.avgRating || 0,
         byQueue,
         byWhatsapp,
         byUser,

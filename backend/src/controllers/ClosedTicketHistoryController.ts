@@ -256,9 +256,9 @@ class ClosedTicketHistoryController {
    */
   async cleanup(req: Request, res: Response): Promise<void> {
     try {
-      const { companyId, isAdmin } = req.user;
+      const { companyId, profile } = req.user;
 
-      if (!isAdmin) {
+      if (profile !== "admin") {
         throw new AppError("Apenas administradores podem fazer limpeza", 403);
       }
 

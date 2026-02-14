@@ -697,13 +697,13 @@ const wbotMessageListener = (
   logger.info(`[WWJS] 🎧 Registrando listeners para sessão ${wbot.id}`);
 
   // ─── Remover listeners anteriores para evitar duplicação ────
-  wbot.removeAllListeners("message");
-  wbot.removeAllListeners("message_create");
-  wbot.removeAllListeners("message_ack");
-  wbot.removeAllListeners("message_revoke_everyone");
-  wbot.removeAllListeners("message_reaction");
-  wbot.removeAllListeners("group_join");
-  wbot.removeAllListeners("group_leave");
+  (wbot as any).removeAllListeners("message");
+  (wbot as any).removeAllListeners("message_create");
+  (wbot as any).removeAllListeners("message_ack");
+  (wbot as any).removeAllListeners("message_revoke_everyone");
+  (wbot as any).removeAllListeners("message_reaction");
+  (wbot as any).removeAllListeners("group_join");
+  (wbot as any).removeAllListeners("group_leave");
   logger.info(`[WWJS] 🧹 Listeners anteriores removidos`);
 
   // ─── Importar histórico ────────────────────────────
