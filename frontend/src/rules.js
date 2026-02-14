@@ -3,6 +3,24 @@ const rules = {
 		static: [],
 	},
 
+	agent: {
+		static: [
+			"tickets-manager:view"
+		],
+	},
+
+	supervisor: {
+		static: [
+			"dashboard:view",
+			"drawer-admin-items:view",
+			"tickets-manager:showall",
+			"user-modal:editProfile",
+			"user-modal:editQueues",
+			"ticket-options:deleteTicket",
+			"contacts-page:deleteContact"
+		],
+	},
+
 	admin: {
 		static: [
 			"dashboard:view",

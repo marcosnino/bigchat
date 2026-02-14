@@ -688,6 +688,12 @@ const messages = {
         },
         success: "Usuario guardado con éxito.",
       },
+      userProfiles: {
+        admin: "Administrador",
+        supervisor: "Supervisor",
+        agent: "Agente",
+        user: "Usuario Estándar",
+      },
       scheduleModal: {
         title: {
           add: "Nueva Programación",

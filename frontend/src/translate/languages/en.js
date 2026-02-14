@@ -683,6 +683,12 @@ const messages = {
 				},
 				success: "User saved successfully.",
 			},
+			userProfiles: {
+				admin: "Administrator",
+				supervisor: "Supervisor",
+				agent: "Agent",
+				user: "Standard User",
+			},
 			scheduleModal: {
 				title: {
 					add: "New Schedule",

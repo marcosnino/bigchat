@@ -208,8 +208,10 @@ const UserModal = ({ open, onClose, userId }) => {
 														id="profile-selection"
 														required
 													>
-														<MenuItem value="admin">Admin</MenuItem>
-														<MenuItem value="user">User</MenuItem>
+													<MenuItem value="admin">{i18n.t("userProfiles.admin")}</MenuItem>
+													<MenuItem value="supervisor">{i18n.t("userProfiles.supervisor")}</MenuItem>
+													<MenuItem value="agent">{i18n.t("userProfiles.agent")}</MenuItem>
+													<MenuItem value="user">{i18n.t("userProfiles.user")}</MenuItem>
 													</Field>
 												</>
 											)}
