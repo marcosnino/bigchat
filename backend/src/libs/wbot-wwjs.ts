@@ -358,7 +358,16 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<WWJSSession> => 
         }
 
         try {
-          await whatsapp.update({ status: newStatus });
+          const updateData: any = { status: newStatus };
+
+          // Quando transiciona para status que não é qrcode, limpar o qrcode
+          if (newStatus !== "qrcode" && newStatus !== "OPENING") {
+            updateData.qrcode = "";
+          }
+          // Nota: Quando newStatus === "qrcode", NÃO sobrescrevemos o qrcode
+          // deixando intacto o que foi definido pelo evento "qr"
+
+          await whatsapp.update(updateData);
           emitSession(io, companyId, whatsapp);
         } catch (e) {
           logger.debug(`[WWJS] Erro ao atualizar estado: ${e}`);
