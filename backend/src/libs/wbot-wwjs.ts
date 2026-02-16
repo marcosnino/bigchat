@@ -33,7 +33,7 @@ const SESSIONS_PATH = path.resolve(__dirname, "..", "..", ".sessions");
 const QR_MAX_RETRIES = 8;
 const RECONNECT_BASE_DELAY_MS = 5000;
 const RECONNECT_MAX_DELAY_MS = 60000;
-const CLIENT_INIT_TIMEOUT_MS = 120000;
+const CLIENT_INIT_TIMEOUT_MS = 300000;
 
 // Garantir diretório de sessões
 if (!fs.existsSync(SESSIONS_PATH)) {

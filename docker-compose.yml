@@ -96,7 +96,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        REACT_APP_BACKEND_URL: https://api.drogariasbigmaster.com.br
+        REACT_APP_BACKEND_URL: http://api.drogariasbigmaster.com.br
         REACT_APP_HOURS_CLOSE_TICKETS_AUTO: "24"
     container_name: bigchat-frontend
     depends_on:

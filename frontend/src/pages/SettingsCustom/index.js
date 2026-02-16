@@ -74,6 +74,13 @@ const SettingsCustom = () => {
       setLoading(true);
       try {
         const companyId = localStorage.getItem("companyId");
+        
+        if (!companyId) {
+          console.warn("CompanyId not found in localStorage");
+          setLoading(false);
+          return;
+        }
+
         const company = await find(companyId);
         const settingList = await getAllSettings();
         setCompany(company);
@@ -105,6 +112,13 @@ const SettingsCustom = () => {
         setLoading(true);
         try {
           const companyId = localStorage.getItem("companyId");
+          
+          if (!companyId) {
+            console.warn("CompanyId not found in localStorage");
+            setLoading(false);
+            return;
+          }
+
           const company = await find(companyId);
           const settingList = await getAllSettings();
           setCompany(company);
