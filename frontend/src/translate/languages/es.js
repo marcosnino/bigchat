@@ -30,6 +30,78 @@ const messages = {
             invalid: "Correo electrónico inválido",
           },
         },
+        closeReasons: {
+          title: "Motivos de cierre",
+          searchPlaceholder: "Buscar...",
+          confirmationModal: {
+            deleteTitle: "¿Desea eliminar este motivo?",
+            deleteMessage: "Esta accion no puede ser revertida.",
+          },
+          table: {
+            name: "Nombre",
+            description: "Descripcion",
+            queue: "Cola",
+            status: "Estado",
+            actions: "Acciones",
+          },
+          status: {
+            active: "Activo",
+            inactive: "Inactivo",
+          },
+          buttons: {
+            add: "Nuevo motivo",
+          },
+          toasts: {
+            deleted: "Motivo eliminado con exito.",
+          },
+        },
+        closureReports: {
+          title: "Informes de cierre",
+          filters: {
+            startDate: "Fecha inicial",
+            endDate: "Fecha final",
+            queue: "Cola",
+            user: "Usuario",
+            whatsapp: "WhatsApp",
+            closeReason: "Motivo de cierre",
+            all: "Todos",
+          },
+          buttons: {
+            search: "Buscar",
+            clear: "Limpiar",
+            export: "Exportar CSV",
+          },
+          summary: {
+            totalTickets: "Total de tickets",
+            avgDuration: "Tiempo promedio",
+            totalMessages: "Total de mensajes",
+            avgRating: "Calificación promedio",
+            byQueue: "Por cola",
+            byCloseReason: "Por motivo de cierre",
+            byUser: "Por usuario",
+          },
+          table: {
+            contact: "Contacto",
+            user: "Usuario",
+            queue: "Cola",
+            closeReason: "Motivo",
+            openedAt: "Abierto en",
+            closedAt: "Cerrado en",
+            duration: "Duración",
+            messages: "Mensajes",
+            rating: "Calificación",
+            rowsPerPage: "Filas por página",
+          },
+          noData: "No se encontraron datos. Seleccione los filtros y haga clic en Buscar.",
+          errors: {
+            loadFilters: "Error al cargar filtros.",
+            loadReport: "Error al cargar informe.",
+            export: "Error al exportar informe.",
+          },
+          messages: {
+            exportSuccess: "Informe exportado con éxito.",
+          },
+        },
         buttons: {
           submit: "Registrar",
           login: "¿Ya tienes una cuenta? ¡Inicia sesión!",
@@ -728,6 +800,25 @@ const messages = {
         },
         success: "Etiqueta guardada con éxito.",
       },
+      closeReasonModal: {
+        title: {
+          add: "Nuevo motivo de cierre",
+          edit: "Editar motivo de cierre",
+        },
+        form: {
+          name: "Nombre",
+          description: "Descripcion",
+          queue: "Cola",
+          queuePlaceholder: "Seleccione una cola",
+          isActive: "Activo",
+        },
+        buttons: {
+          okAdd: "Agregar",
+          okEdit: "Guardar",
+          cancel: "Cancelar",
+        },
+        success: "Motivo guardado con éxito.",
+      },
       chat: {
         toasts: {
           fillTitle: "Por favor, complete el título de la conversación.",
@@ -811,6 +902,10 @@ const messages = {
           closed: "Finalizar",
           reopen: "Reabrir",
         },
+        status: {
+          replied: "RESPONDIDO",
+          waitingReply: "ESPERANDO",
+        },
       },
       ticketsListItem: {
         tooltip: {
@@ -850,6 +945,8 @@ const messages = {
           contacts: "Contactos",
           queues: "Colas & Chatbot",
           tags: "Etiquetas",
+          closeReasons: "Motivos de cierre",
+          closureReports: "Informes de cierre",
           administration: "Administración",
           users: "Usuarios",
           settings: "Configuraciones",
@@ -1504,6 +1601,21 @@ const messages = {
           cancel: "Cancelar",
         },
       },
+      closeReasonDialog: {
+        title: "Finalizar atención",
+        message: "Seleccione el motivo de cierre para continuar.",
+        form: {
+          reason: "Motivo",
+          placeholder: "Seleccione un motivo",
+        },
+        buttons: {
+          cancel: "Cancelar",
+          confirm: "Finalizar",
+        },
+        errors: {
+          required: "Seleccione un motivo de cierre.",
+        },
+      },
       fileModal: {
         title: {
           add: "Agregar lista de archivos",
@@ -1598,6 +1710,9 @@ const messages = {
         ERR_CREATING_TICKET: "Error al crear ticket en la base de datos.",
         ERR_FETCH_WAPP_MSG: "Error al buscar el mensaje en WhatsApp, tal vez sea muy antiguo.",
         ERR_QUEUE_COLOR_ALREADY_EXISTS: "Este color ya está en uso, elija otro.",
+        ERR_CLOSE_REASON_REQUIRED: "Seleccione un motivo de cierre.",
+        ERR_CLOSE_REASON_QUEUE_REQUIRED: "El motivo de cierre debe pertenecer a la cola del ticket.",
+        ERR_CLOSE_REASON_NOT_FOUND: "Motivo de cierre no encontrado.",
         ERR_WAPP_GREETING_REQUIRED: "El mensaje de saludo es obligatorio cuando hay más de una cola.",
       },
     }

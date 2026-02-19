@@ -17,7 +17,6 @@ import {
 } from "@material-ui/core";
 import {
   History as HistoryIcon,
-  Person as PersonIcon,
   AccessTime as TimeIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
@@ -25,11 +24,10 @@ import {
   SwapHoriz as TransferIcon,
   Chat as ChatIcon,
 } from "@material-ui/icons";
-import { green, orange, red, grey } from "@material-ui/core/colors";
+import { green, orange, grey } from "@material-ui/core/colors";
 
 import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
-import toastError from "../../errors/toastError";
 
 const useStyles = makeStyles((theme) => ({
   container: {

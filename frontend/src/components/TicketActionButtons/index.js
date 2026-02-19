@@ -11,6 +11,7 @@ import TicketOptionsMenu from "../TicketOptionsMenu";
 import ButtonWithSpinner from "../ButtonWithSpinner";
 import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
+import CloseReasonDialog from "../CloseReasonDialog";
 
 const useStyles = makeStyles(theme => ({
 	actionButtons: {
@@ -30,6 +31,7 @@ const TicketActionButtons = ({ ticket }) => {
 	const history = useHistory();
 	const [anchorEl, setAnchorEl] = useState(null);
 	const [loading, setLoading] = useState(false);
+	const [closeReasonDialogOpen, setCloseReasonDialogOpen] = useState(false);
 	const ticketOptionsMenuOpen = Boolean(anchorEl);
 	const { user } = useContext(AuthContext);
 
@@ -41,13 +43,17 @@ const TicketActionButtons = ({ ticket }) => {
 		setAnchorEl(null);
 	};
 
-	const handleUpdateTicketStatus = async (e, status, userId) => {
+	const handleUpdateTicketStatus = async (e, status, userId, closeReasonId) => {
 		setLoading(true);
 		try {
-			await api.put(`/tickets/${ticket.id}`, {
+			const payload = {
 				status: status,
 				userId: userId || null,
-			});
+			};
+			if (status === "closed") {
+				payload.closeReasonId = closeReasonId;
+			}
+			await api.put(`/tickets/${ticket.id}`, payload);
 
 			setLoading(false);
 			if (status === "open") {
@@ -59,6 +65,19 @@ const TicketActionButtons = ({ ticket }) => {
 			setLoading(false);
 			toastError(err);
 		}
+	};
+
+	const handleOpenCloseReasonDialog = () => {
+		setCloseReasonDialogOpen(true);
+	};
+
+	const handleCloseReasonDialog = () => {
+		setCloseReasonDialogOpen(false);
+	};
+
+	const handleConfirmCloseReason = (closeReasonId) => {
+		setCloseReasonDialogOpen(false);
+		handleUpdateTicketStatus(null, "closed", user?.id, closeReasonId);
 	};
 
 	return (
@@ -88,7 +107,7 @@ const TicketActionButtons = ({ ticket }) => {
 						size="small"
 						variant="contained"
 						color="primary"
-						onClick={e => handleUpdateTicketStatus(e, "closed", user?.id)}
+						onClick={handleOpenCloseReasonDialog}
 					>
 						{i18n.t("messagesList.header.buttons.resolve")}
 					</ButtonWithSpinner>
@@ -114,6 +133,12 @@ const TicketActionButtons = ({ ticket }) => {
 					{i18n.t("messagesList.header.buttons.accept")}
 				</ButtonWithSpinner>
 			)}
+			<CloseReasonDialog
+				open={closeReasonDialogOpen}
+				onClose={handleCloseReasonDialog}
+				onConfirm={handleConfirmCloseReason}
+				queueId={ticket?.queue?.id || ticket?.queueId}
+			/>
 		</div>
 	);
 };

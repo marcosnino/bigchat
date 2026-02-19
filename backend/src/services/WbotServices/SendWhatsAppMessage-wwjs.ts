@@ -18,6 +18,7 @@ import Contact from "../../models/Contact";
 import { logger } from "../../utils/logger";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import formatBody from "../../helpers/Mustache";
+import MessageSemaphoreService from "../MessageServices/MessageSemaphoreService";
 
 // ─── Formatar número para envio ───────────────────────────────
 const formatNumber = (number: string): string => {
@@ -53,6 +54,26 @@ const SendWhatsAppMessage = async ({
   const chatId = contact.isGroup
     ? `${contact.number}@g.us`
     : formatNumber(contact.number);
+
+  // Validar número (apenas para contatos individuais)
+  if (!contact.isGroup) {
+    try {
+      logger.info(`[SendMessage] Validando número ${contact.number}...`);
+      const numberId = await wbot.getNumberId(chatId);
+      if (!numberId) {
+        logger.error(`[SendMessage] Número ${contact.number} não está registrado no WhatsApp`);
+        throw new Error("ERR_WAPP_INVALID_CONTACT");
+      }
+      logger.info(`[SendMessage] ✓ Número validado: ${numberId._serialized}`);
+    } catch (err: any) {
+      // getNumberId não existe ou falhou
+      if (err.message === "ERR_WAPP_INVALID_CONTACT") {
+        throw err;
+      }
+      // Se o método não existe, continua sem validação
+      logger.warn(`[SendMessage] Não foi possível validar número (método não disponível): ${err.message}`);
+    }
+  }
 
   // Formatar corpo com Mustache
   const formattedBody = formatBody(body, contact);
@@ -114,12 +135,24 @@ const SendWhatsAppMessage = async ({
     companyId: ticket.companyId
   });
 
+  // Processar semáforo (marcar mensagens pendentes como respondidas)
+  logger.info(`[SendMessage | SEMÁFORO] Processando semáforo para ticket ${ticket.id}`);
+  await MessageSemaphoreService.processMessage({
+    messageId: newMessage.id,
+    ticketId: ticket.id,
+    fromMe: true,
+    companyId: ticket.companyId
+  }).catch(semErr => {
+    logger.error(`[SendMessage | SEMÁFORO] Erro ao processar semáforo: ${semErr.message}`);
+    // Não bloqueia o fluxo se o semáforo falhar
+  });
+
   // Atualizar última mensagem do ticket
   await ticket.update({
     lastMessage: formattedBody.substring(0, 255)
   });
 
-  logger.info(`[SendMessage] Mensagem enviada: ${newMessage.id}`);
+  logger.info(`[SendMessage] ✓ Mensagem enviada com sucesso: ${newMessage.id}`);
 
   return newMessage;
 };

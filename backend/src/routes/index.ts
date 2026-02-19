@@ -41,6 +41,7 @@ import validationRoutes from "./validationRoutes";
 import userWhatsappQueueRoutes from "./userWhatsappQueueRoutes";
 import closedTicketHistoryRoutes from "./closedTicketHistoryRoutes";
 import flowChatRoutes from "./flowChatRoutes";
+import closeReasonRoutes from "./closeReasonRoutes";
 const routes = Router();
 
 routes.use(userRoutes);
@@ -85,5 +86,6 @@ routes.use(validationRoutes);
 routes.use(userWhatsappQueueRoutes);
 routes.use(closedTicketHistoryRoutes);
 routes.use(flowChatRoutes);
+routes.use(closeReasonRoutes);
 
 export default routes;

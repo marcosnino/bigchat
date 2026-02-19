@@ -227,7 +227,7 @@ const TicketsList = (props) => {
 	useEffect(() => {
 
 		const queueIds = queues.map((q) => q.id);
-		const filteredTickets = tickets.filter((t) => queueIds.indexOf(t.queueId) > -1);
+		const filteredTickets = tickets.filter((t) => queueIds.indexOf(t.queueId) > -1 || t.userId === user.id || !t.queueId);
 		const getSettingValue = key => {
 			const { value } = settings.find(s => s.key === key);
 			return value;
@@ -247,7 +247,7 @@ const TicketsList = (props) => {
 
 
 
-	}, [tickets, status, searchParam, queues, profile]);
+	}, [tickets, status, searchParam, queues, profile, user.id]);
 
 	useEffect(() => {
 		const socket = openSocket();

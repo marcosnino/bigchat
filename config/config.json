@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "bigchat",
+    "password": "bigchat123",
+    "database": "bigchat",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "bigchat",
+    "password": "bigchat123",
+    "database": "bigchat",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "bigchat",
+    "password": "bigchat123",
+    "database": "bigchat",
+    "host": "postgres",
+    "dialect": "postgres"
+  }
+}

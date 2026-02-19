@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { verify } from "jsonwebtoken";
 import AppError from "../errors/AppError";
 import { getIO } from "../libs/socket";
 
@@ -7,6 +8,17 @@ import { SendRefreshToken } from "../helpers/SendRefreshToken";
 import { RefreshTokenService } from "../services/AuthServices/RefreshTokenService";
 import FindUserFromToken from "../services/AuthServices/FindUserFromToken";
 import User from "../models/User";
+import { SerializeUser } from "../helpers/SerializeUser";
+import authConfig from "../config/auth";
+import ShowUserService from "../services/UserServices/ShowUserService";
+
+interface TokenPayload {
+  id: string;
+  companyId: number;
+  profile: string;
+  iat: number;
+  exp: number;
+}
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
@@ -56,15 +68,35 @@ export const update = async (
 };
 
 export const me = async (req: Request, res: Response): Promise<Response> => {
-  const token: string = req.cookies.jrt;
-  const user = await FindUserFromToken(token);
-  const { id, profile, super: superAdmin } = user;
+  const authHeader = req.headers.authorization;
+  let user: User;
 
-  if (!token) {
-    throw new AppError("ERR_SESSION_EXPIRED", 401);
+  if (authHeader) {
+    const [, accessToken] = authHeader.split(" ");
+
+    if (!accessToken) {
+      throw new AppError("ERR_SESSION_EXPIRED", 401);
+    }
+
+    try {
+      const decoded = verify(accessToken, authConfig.secret) as TokenPayload;
+      user = await ShowUserService(decoded.id);
+    } catch (err) {
+      throw new AppError("ERR_SESSION_EXPIRED", 401);
+    }
+  } else {
+    const refreshToken: string = req.cookies.jrt;
+
+    if (!refreshToken) {
+      throw new AppError("ERR_SESSION_EXPIRED", 401);
+    }
+
+    user = await FindUserFromToken(refreshToken);
   }
 
-  return res.json({ id, profile, super: superAdmin });
+  const serializedUser = await SerializeUser(user);
+
+  return res.json(serializedUser);
 };
 
 export const remove = async (

@@ -13,7 +13,7 @@ RUN npm install --force
 COPY . .
 
 # Variáveis injetadas no build do React (REACT_APP_*)
-ARG REACT_APP_BACKEND_URL=http://api.drogariasbigmaster.com.br
+ARG REACT_APP_BACKEND_URL=https://api.drogariasbigmaster.com.br
 ARG REACT_APP_HOURS_CLOSE_TICKETS_AUTO=24
 ENV REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL}
 ENV REACT_APP_HOURS_CLOSE_TICKETS_AUTO=${REACT_APP_HOURS_CLOSE_TICKETS_AUTO}

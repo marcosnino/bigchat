@@ -22,6 +22,7 @@ import Company from "./Company";
 import Whatsapp from "./Whatsapp";
 import WhatsappQueue from "./WhatsappQueue";
 import QueueOption from "./QueueOption";
+import CloseReason from "./CloseReason";
 import Prompt from "./Prompt";
 import QueueIntegrations from "./QueueIntegrations";
 
@@ -81,8 +82,14 @@ class Queue extends Model<Queue> {
   })
   options: QueueOption[];
 
+  @HasMany(() => CloseReason)
+  closeReasons: CloseReason[];
+
   @Column
   orderQueue: number;
+
+  @Column
+  lastAssignedUserId: number;
 
   
   @ForeignKey(() => QueueIntegrations)

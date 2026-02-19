@@ -1,6 +1,8 @@
 import { getIO } from "../../libs/socket";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
+import Contact from "../../models/Contact";
+import Queue from "../../models/Queue";
 import Whatsapp from "../../models/Whatsapp";
 import MessageSemaphoreService from "./MessageSemaphoreService";
 
@@ -27,12 +29,13 @@ const CreateMessageService = async ({
 }: Request): Promise<Message> => {
   try {
     // Tentar fazer upsert - insere ou atualiza a mensagem
+    // Isso ajuda a prevenir erros de duplicata em race conditions
     await Message.upsert({ ...messageData, companyId });
   } catch (error: any) {
     // Se houver erro de constraint única duplicada, apenas continua 
-    // (a mensagem já foi processada)
+    // (a mensagem já foi processada por outro processo)
     if (error.name === "SequelizeUniqueConstraintError") {
-      console.warn(`[CreateMessageService] Mensagem ${messageData.id} já existe, atualizando...`);
+      console.warn(`[CreateMessageService] Mensagem ${messageData.id} duplicada detectada, atualizando campos...`);
       // Tentar atualizar os campos importantes se a mensagem já existe
       try {
         await Message.update(
@@ -48,34 +51,58 @@ const CreateMessageService = async ({
             where: { id: messageData.id } 
           }
         );
-      } catch (updateError) {
-        console.error(`[CreateMessageService] Erro ao atualizar mensagem ${messageData.id}:`, updateError);
+      } catch (updateError: any) {
+        console.error(`[CreateMessageService] Erro ao atualizar mensagem ${messageData.id}:`, updateError.message);
       }
     } else {
+      // Re-lançar erro se não for duplicata
+      console.error(`[CreateMessageService] Erro ao criar mensagem ${messageData.id}:`, error.message);
       throw error;
     }
   }
 
+  // Buscar mensagem com includes simples (sem nested) para evitar 
+  // "FOR UPDATE cannot be applied to nullable side of outer join"
   const message = await Message.findByPk(messageData.id, {
     include: [
-      "contact",
+      { 
+        model: Contact,
+        as: "contact",
+        attributes: ["id", "name", "number", "email", "profilePicUrl"]
+      },
       {
         model: Ticket,
         as: "ticket",
+        attributes: ["id", "status", "contactId", "whatsappId", "queueId", "userId", "companyId"],
         include: [
-          "contact",
-          "queue",
+          { 
+            model: Contact,
+            as: "contact",
+            attributes: ["id", "name", "number", "email", "profilePicUrl"]
+          },
+          { 
+            model: Queue,
+            as: "queue",
+            attributes: ["id", "name", "color"]
+          },
           {
             model: Whatsapp,
             as: "whatsapp",
-            attributes: ["name"]
+            attributes: ["id", "name"]
           }
         ]
       },
       {
         model: Message,
         as: "quotedMsg",
-        include: ["contact"]
+        attributes: ["id", "body", "fromMe", "read", "mediaType", "mediaUrl", "createdAt"],
+        include: [
+          {
+            model: Contact,
+            as: "contact",
+            attributes: ["id", "name", "number"]
+          }
+        ]
       }
     ]
   });

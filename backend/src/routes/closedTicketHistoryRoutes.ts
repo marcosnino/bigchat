@@ -32,6 +32,28 @@ const router = Router();
 router.get("/closed-tickets/history", isAuth, ClosedTicketHistoryController.index);
 
 /**
+ * GET /closed-tickets/report
+ * Relatório detalhado de fechamentos com estatísticas agrupadas
+ * Query params:
+ *   - startDate: Data início (ISO)
+ *   - endDate: Data fim (ISO)
+ *   - queueId: Filtrar por fila
+ *   - userId: Filtrar por usuário
+ *   - whatsappId: Filtrar por WhatsApp
+ *   - closeReasonId: Filtrar por motivo de fechamento
+ *   - page: Página (default: 1)
+ *   - limit: Itens por página (default: 50, máx: 500)
+ */
+router.get("/closed-tickets/report", isAuth, ClosedTicketHistoryController.report);
+
+/**
+ * GET /closed-tickets/report/export
+ * Exportar relatório de fechamentos em CSV
+ * Aceita mesmos filtros que /report
+ */
+router.get("/closed-tickets/report/export", isAuth, ClosedTicketHistoryController.reportExport);
+
+/**
  * GET /closed-tickets/stats
  * Obter estatísticas de tickets fechados
  * Retorna: total, tempo médio, mensagens, rating, grafos por fila/número/usuário

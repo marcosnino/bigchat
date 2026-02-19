@@ -1,9 +1,8 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, makeStyles, Modal, Typography } from "@material-ui/core";
-import { CloseOutlined, FontDownload, ImportContacts } from "@material-ui/icons";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, makeStyles, Typography } from "@material-ui/core";
+import { CloseOutlined, ImportContacts } from "@material-ui/icons";
 import React, { useState } from "react";
 import { FaDownload } from "react-icons/fa";
 import * as XLSX from 'xlsx';
-import { array } from "yup";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
 import { i18n } from "../../translate/i18n";

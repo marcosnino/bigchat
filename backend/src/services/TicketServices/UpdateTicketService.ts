@@ -4,6 +4,9 @@ import CheckContactOpenTickets from "../../helpers/CheckContactOpenTickets";
 import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../../libs/socket";
 import Ticket from "../../models/Ticket";
+import Contact from "../../models/Contact";
+import User from "../../models/User";
+import Tag from "../../models/Tag";
 import Setting from "../../models/Setting";
 import Queue from "../../models/Queue";
 import ShowTicketService from "./ShowTicketService";
@@ -21,6 +24,7 @@ import AppError from "../../errors/AppError";
 import Company from "../../models/Company";
 import ClosedTicketHistoryService from "./ClosedTicketHistoryService";
 import MessageSemaphoreService from "../MessageServices/MessageSemaphoreService";
+import CloseReason from "../../models/CloseReason";
 
 interface TicketData {
   status?: string;
@@ -32,6 +36,7 @@ interface TicketData {
   useIntegration?: boolean;
   integrationId?: number | null;
   promptId?: number | null;
+  closeReasonId?: number | null;
 }
 
 interface Request {
@@ -62,6 +67,8 @@ const UpdateTicketService = async ({
     let promptId: number | null = ticketData.promptId || null;
     let useIntegration: boolean | null = ticketData.useIntegration || false;
     let integrationId: number | null = ticketData.integrationId || null;
+    let closeReasonId: number | null = ticketData.closeReasonId || null;
+    let closeReasonName: string | null = null;
 
     const io = getIO();
 
@@ -116,6 +123,28 @@ const UpdateTicketService = async ({
     }
 
     if (status !== undefined && ["closed"].indexOf(status) > -1) {
+      if (!userId && actionUserId) {
+        userId = Number(actionUserId);
+      }
+
+      if (!closeReasonId) {
+        throw new AppError("ERR_CLOSE_REASON_REQUIRED", 400);
+      }
+
+      const closeReason = await CloseReason.findOne({
+        where: {
+          id: closeReasonId,
+          companyId,
+          isActive: true
+        }
+      });
+
+      if (!closeReason) {
+        throw new AppError("ERR_CLOSE_REASON_NOT_FOUND", 404);
+      }
+
+      closeReasonName = closeReason.name;
+
       const { complationMessage, ratingMessage } = await ShowWhatsAppService(
         ticket.whatsappId,
         companyId
@@ -128,22 +157,8 @@ const UpdateTicketService = async ({
           bodyRatingMessage +=
             "Digite de 1 à 3 para qualificar nosso atendimento:\n*1* - _Insatisfeito_\n*2* - _Satisfeito_\n*3* - _Muito Satisfeito_\n\n";
           await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
-
-          await ticketTraking.update({
-            ratingAt: moment().toDate(),
-            userId: actionUserId
-          });
-
-          io.to(`company-${ticket.companyId}-open`)
-            .to(`queue-${ticket.queueId}-open`)
-            .to(ticketId.toString())
-            .emit(`company-${ticket.companyId}-ticket`, {
-              action: "delete",
-              ticketId: ticket.id
-            });
-
-          return { ticket, oldStatus, oldUserId };
         }
+
         ticketTraking.ratingAt = moment().toDate();
         ticketTraking.rated = false;
       }
@@ -178,7 +193,8 @@ const UpdateTicketService = async ({
           {
             ...(ticket as any).dataValues,
             closedByUserId: actionUserId || ticket.userId,
-            messages: []
+            messages: [],
+            closureReason: closeReasonName
           },
           companyId
         );
@@ -288,10 +304,20 @@ const UpdateTicketService = async ({
       userId,
       whatsappId,
       chatbot,
-      queueOptionId
+      queueOptionId,
+      closeReasonId: status === "closed" ? closeReasonId : null
     });
 
-    await ticket.reload();
+    // Reload com includes simples para evitar "FOR UPDATE cannot be applied to nullable side of OUTER JOIN"
+    await ticket.reload({
+      include: [
+        { model: Contact, as: "contact", attributes: ["id", "name", "number", "email", "profilePicUrl"] },
+        { model: User, as: "user", attributes: ["id", "name"] },
+        { model: Queue, as: "queue", attributes: ["id", "name", "color"] },
+        { model: Whatsapp, as: "whatsapp", attributes: ["id", "name"] },
+        { model: Tag, as: "tags", attributes: ["id", "name", "color"] }
+      ]
+    });
 
     if (status !== undefined && ["pending"].indexOf(status) > -1) {
       ticketTraking.update({

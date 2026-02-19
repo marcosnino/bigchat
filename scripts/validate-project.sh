@@ -36,6 +36,26 @@ print_info() {
     echo -e "${BLUE}🔍 $1${NC}"
 }
 
+COMPOSE_CMD=()
+
+set_compose_cmd() {
+    if docker compose version &> /dev/null; then
+        COMPOSE_CMD=(docker compose)
+        return 0
+    fi
+
+    if command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD=(docker-compose)
+        return 0
+    fi
+
+    return 1
+}
+
+run_compose() {
+    "${COMPOSE_CMD[@]}" "$@"
+}
+
 # Verificar se está no diretório correto
 check_project_directory() {
     if [[ ! -f "docker-compose.yml" ]] || [[ ! -d "backend" ]] || [[ ! -d "frontend" ]]; then
@@ -61,12 +81,12 @@ check_docker() {
     
     print_success "Docker daemon está rodando"
     
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "Docker Compose não está instalado"
+    if ! set_compose_cmd; then
+        print_error "Docker Compose não está instalado (nem plugin 'docker compose' nem 'docker-compose')"
         return 1
     fi
     
-    print_success "Docker Compose está disponível"
+    print_success "Docker Compose está disponível (${COMPOSE_CMD[*]})"
     return 0
 }
 
@@ -251,7 +271,7 @@ check_build_integrity() {
     print_header "VERIFICANDO INTEGRIDADE DO BUILD"
     
     # Verificar sintaxe do docker-compose
-    if docker-compose config &> /dev/null; then
+    if run_compose config &> /dev/null; then
         print_success "docker-compose.yml é válido"
     else
         print_error "docker-compose.yml tem erros de sintaxe"
@@ -261,8 +281,8 @@ check_build_integrity() {
     # Verificar se as imagens podem ser construídas (dry-run)
     print_info "Verificando se as imagens podem ser construídas..."
     
-    if docker-compose config --services | while read -r service; do
-        if docker-compose build --dry-run "$service" &> /dev/null; then
+    if run_compose config --services | while read -r service; do
+        if run_compose build --dry-run "$service" &> /dev/null; then
             print_success "Build configurado corretamente: $service"
         else
             print_warning "Possível problema no build: $service"
@@ -337,9 +357,9 @@ EOF
     
     # Executar verificações
     for check in "${checks[@]}"; do
-        ((total_checks++))
+        total_checks=$((total_checks + 1))
         if $check; then
-            ((passed_checks++))
+            passed_checks=$((passed_checks + 1))
         fi
         echo
     done

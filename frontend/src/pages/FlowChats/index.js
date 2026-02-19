@@ -21,7 +21,6 @@ import {
   DialogActions,
   Tooltip,
   Switch,
-  FormControlLabel,
 } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import EditIcon from "@material-ui/icons/Edit";

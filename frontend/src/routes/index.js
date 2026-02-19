@@ -14,6 +14,8 @@ import Users from "../pages/Users";
 import Contacts from "../pages/Contacts/";
 import Queues from "../pages/Queues/";
 import Tags from "../pages/Tags/";
+import CloseReasons from "../pages/CloseReasons/";
+import ClosureReports from "../pages/ClosureReports/";
 import MessagesAPI from "../pages/MessagesAPI/";
 import Helps from "../pages/Helps/";
 import ContactLists from "../pages/ContactLists/";
@@ -94,6 +96,8 @@ const Routes = () => {
                   isPrivate
                 />
                 <Route exact path="/tags" component={Tags} isPrivate />
+                <Route exact path="/close-reasons" component={CloseReasons} isPrivate />
+                <Route exact path="/closure-reports" component={ClosureReports} isPrivate />
                 <Route exact path="/contacts" component={Contacts} isPrivate />
                 <Route exact path="/helps" component={Helps} isPrivate />
                 <Route exact path="/users" component={Users} isPrivate />

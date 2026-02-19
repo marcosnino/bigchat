@@ -24,6 +24,7 @@ import User from "./User";
 import Whatsapp from "./Whatsapp";
 import Company from "./Company";
 import QueueOption from "./QueueOption";
+import CloseReason from "./CloseReason";
 import Tag from "./Tag";
 import TicketTag from "./TicketTag";
 import QueueIntegrations from "./QueueIntegrations";
@@ -42,6 +43,7 @@ class Ticket extends Model<Ticket> {
   @Column
   unreadMessages: number;
 
+  @Default("")
   @Column
   lastMessage: string;
 
@@ -92,6 +94,13 @@ class Ticket extends Model<Ticket> {
 
   @BelongsTo(() => QueueOption)
   queueOption: QueueOption;
+
+  @ForeignKey(() => CloseReason)
+  @Column
+  closeReasonId: number;
+
+  @BelongsTo(() => CloseReason)
+  closeReason: CloseReason;
 
   @HasMany(() => Message)
   messages: Message[];

@@ -5,7 +5,7 @@ import { parseISO, format, isSameDay } from "date-fns";
 import clsx from "clsx";
 
 import { makeStyles } from "@material-ui/core/styles";
-import { green, grey, red, blue } from "@material-ui/core/colors";
+import { green, grey, blue } from "@material-ui/core/colors";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import ListItemAvatar from "@material-ui/core/ListItemAvatar";
@@ -27,16 +27,14 @@ import { Tooltip } from "@material-ui/core";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import { TicketsContext } from "../../context/Tickets/TicketsContext";
 import toastError from "../../errors/toastError";
+import CloseReasonDialog from "../CloseReasonDialog";
 import { v4 as uuidv4 } from "uuid";
 
-import RoomIcon from '@material-ui/icons/Room';
-import WhatsAppIcon from "@material-ui/icons/WhatsApp";
 import AndroidIcon from "@material-ui/icons/Android";
 import VisibilityIcon from "@material-ui/icons/Visibility";
 import TicketMessagesDialog from "../TicketMessagesDialog";
-import DoneIcon from '@material-ui/icons/Done';
-import ClearOutlinedIcon from '@material-ui/icons/ClearOutlined';
-import contrastColor from "../../helpers/contrastColor";
+import DoneAllIcon from '@material-ui/icons/DoneAll';
+import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import ContactTag from "../ContactTag";
 
 const useStyles = makeStyles((theme) => ({
@@ -134,12 +132,6 @@ const useStyles = makeStyles((theme) => ({
 
   acceptButton: {
     position: "absolute",
-    right: "108px",
-  },
-
-
-  acceptButton: {
-    position: "absolute",
     left: "50%",
   },
 
@@ -183,24 +175,52 @@ const useStyles = makeStyles((theme) => ({
       transform: "scale(1) translate(0%, -40%)",
     },
 
+  },
+  respondedBadge: {
+    background: "#2196F3",
+    color: "#FFF",
+    marginRight: 1,
+    padding: 1,
+    fontWeight: 'bold',
+    paddingLeft: 5,
+    paddingRight: 5,
+    borderRadius: 3,
+    fontSize: "0.7em",
+    whiteSpace: "nowrap",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 2,
+  },
+  waitingResponseBadge: {
+    background: "#FF9800",
+    color: "#FFF",
+    marginRight: 1,
+    padding: 1,
+    fontWeight: 'bold',
+    paddingLeft: 5,
+    paddingRight: 5,
+    borderRadius: 3,
+    fontSize: "0.7em",
+    whiteSpace: "nowrap",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 2,
   }
 }));
-  {/*PLW DESIGN INSERIDO O dentro do const handleChangeTab*/}
-  const TicketListItemCustom = ({ ticket }) => {
+
+const TicketListItemCustom = ({ ticket }) => {
   const classes = useStyles();
   const history = useHistory();
   const [loading, setLoading] = useState(false);
   const [ticketUser, setTicketUser] = useState(null);
-  const [ticketQueueName, setTicketQueueName] = useState(null);
-  const [ticketQueueColor, setTicketQueueColor] = useState(null);
   const [tag, setTag] = useState([]);
-  const [whatsAppName, setWhatsAppName] = useState(null);
 
   const [openTicketMessageDialog, setOpenTicketMessageDialog] = useState(false);
   
   // Estados para menu de contexto
   const [contextMenu, setContextMenu] = useState(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ mouseX: null, mouseY: null });
+  const [closeReasonDialogOpen, setCloseReasonDialogOpen] = useState(false);
   
   const { ticketId } = useParams();
   const isMounted = useRef(true);
@@ -212,14 +232,8 @@ const useStyles = makeStyles((theme) => ({
     if (ticket.userId && ticket.user) {
       setTicketUser(ticket.user?.name?.toUpperCase());
     }
-    setTicketQueueName(ticket.queue?.name?.toUpperCase());
-    setTicketQueueColor(ticket.queue?.color);
 
-    if (ticket.whatsappId && ticket.whatsapp) {
-      setWhatsAppName(ticket.whatsapp.name?.toUpperCase());
-    }
-
-    setTag(ticket?.tags);
+    setTag(Array.isArray(ticket?.tags) ? ticket?.tags : []);
 
     return () => {
       isMounted.current = false;
@@ -228,8 +242,8 @@ const useStyles = makeStyles((theme) => ({
   }, []);
 
   {/*CÓDIGO NOVO SAUDAÇÃO*/}
-  const handleCloseTicket = async (id) => {
-    setTag(ticket?.tags);
+  const handleCloseTicket = async (id, closeReasonId) => {
+    setTag(Array.isArray(ticket?.tags) ? ticket?.tags : []);
     setLoading(true);
     try {
       await api.put(`/tickets/${id}`, {
@@ -238,7 +252,8 @@ const useStyles = makeStyles((theme) => ({
         queueId: ticket?.queue?.id,
         useIntegration: false,
         promptId: null,
-        integrationId: null
+        integrationId: null,
+        closeReasonId,
       });
     } catch (err) {
       setLoading(false);
@@ -346,11 +361,20 @@ const useStyles = makeStyles((theme) => ({
     setContextMenuPosition({ mouseX: null, mouseY: null });
   };
 
-  const handleContextMenuCloseTicket = async () => {
+  const handleContextMenuCloseTicket = () => {
     if (contextMenu && (contextMenu.status === "open" || contextMenu.status === "pending")) {
-      await handleCloseTicket(contextMenu.id);
+      setCloseReasonDialogOpen(true);
     }
     handleContextMenuClose();
+  };
+
+  const handleCloseReasonDialog = () => {
+    setCloseReasonDialogOpen(false);
+  };
+
+  const handleConfirmCloseReason = async (closeReasonId) => {
+    setCloseReasonDialogOpen(false);
+    await handleCloseTicket(ticket.id, closeReasonId);
   };
 
   const handleContextMenuAcceptTicket = async () => {
@@ -483,14 +507,26 @@ const useStyles = makeStyles((theme) => ({
                 component="span"
                 variant="body2"
                 color="textSecondary"
-              > {ticket.lastMessage.includes('data:image/png;base64') ? <MarkdownWrapper> Localização</MarkdownWrapper> : <MarkdownWrapper>{ticket.lastMessage}</MarkdownWrapper>}
+              > {ticket.lastMessage && typeof ticket.lastMessage === 'string' && ticket.lastMessage.includes('data:image/png;base64') ? <MarkdownWrapper> Localização</MarkdownWrapper> : <MarkdownWrapper>{ticket.lastMessage || ''}</MarkdownWrapper>}
                 <span className={classes.secondaryContentSecond} >
                   {ticket?.whatsapp?.name ? <Badge className={classes.connectionTag}>{ticket?.whatsapp?.name?.toUpperCase()}</Badge> : <br></br>}
                   {ticketUser ? <Badge style={{ backgroundColor: "#000000" }} className={classes.connectionTag}>{ticketUser}</Badge> : <br></br>}
                   <Badge style={{ backgroundColor: ticket.queue?.color || "#7c7c7c" }} className={classes.connectionTag}>{ticket.queue?.name?.toUpperCase() || i18n.t("ticketsListItem.noQueue")}</Badge>
+                  {ticket.status === "open" && ticket.fromMe === true && (
+                    <Badge className={classes.respondedBadge}>
+                      <DoneAllIcon style={{ fontSize: 12, marginRight: 2 }} />
+                      {i18n.t("ticketsList.status.replied")}
+                    </Badge>
+                  )}
+                  {ticket.status === "open" && ticket.fromMe === false && (
+                    <Badge className={classes.waitingResponseBadge}>
+                      <HourglassEmptyIcon style={{ fontSize: 12, marginRight: 2 }} />
+                      {i18n.t("ticketsList.status.waitingReply")}
+                    </Badge>
+                  )}
                 </span>
                 <span style={{ paddingTop: "2px" }} className={classes.secondaryContentSecond} >
-                  {tag?.map((tag) => {
+                  {Array.isArray(tag) && tag?.map((tag) => {
                     return (
                       <ContactTag tag={tag} key={`ticket-contact-tag-${ticket.id}-${tag.id}`} />
                     );
@@ -557,7 +593,7 @@ const useStyles = makeStyles((theme) => ({
               className={classes.acceptButton}
               size="small"
               loading={loading}
-              onClick={e => handleCloseTicket(ticket.id)}
+              onClick={() => setCloseReasonDialogOpen(true)}
             >
               {i18n.t("ticketsList.buttons.closed")}
             </ButtonWithSpinner>
@@ -602,6 +638,13 @@ const useStyles = makeStyles((theme) => ({
           </MenuItem>
         )}
       </Menu>
+
+      <CloseReasonDialog
+        open={closeReasonDialogOpen}
+        onClose={handleCloseReasonDialog}
+        onConfirm={handleConfirmCloseReason}
+        queueId={ticket?.queue?.id || ticket?.queueId}
+      />
 
       <Divider variant="inset" component="li" />
     </React.Fragment>

@@ -27,11 +27,11 @@ import ListIcon from "@material-ui/icons/ListAlt";
 import AnnouncementIcon from "@material-ui/icons/Announcement";
 import ForumIcon from "@material-ui/icons/Forum";
 import LocalAtmIcon from '@material-ui/icons/LocalAtm';
-import RotateRight from "@material-ui/icons/RotateRight";
+import AssignmentTurnedInIcon from "@material-ui/icons/AssignmentTurnedIn";
+import AssessmentIcon from "@material-ui/icons/Assessment";
 import { i18n } from "../translate/i18n";
 import { WhatsAppsContext } from "../context/WhatsApp/WhatsAppsContext";
 import { AuthContext } from "../context/Auth/AuthContext";
-import LoyaltyRoundedIcon from '@material-ui/icons/LoyaltyRounded';
 import { Can } from "../components/Can";
 import { SocketContext } from "../context/Socket/SocketContext";
 import { isArray } from "lodash";
@@ -41,7 +41,7 @@ import BorderColorIcon from '@material-ui/icons/BorderColor';
 import ToDoList from "../pages/ToDoList/";
 import toastError from "../errors/toastError";
 import { makeStyles } from "@material-ui/core/styles";
-import { AllInclusive, AttachFile, BlurCircular, DeviceHubOutlined, Schedule, Phone } from '@material-ui/icons';
+import { AllInclusive, AttachFile, DeviceHubOutlined, Phone } from '@material-ui/icons';
 import AccountTreeIcon from '@material-ui/icons/AccountTree';
 import usePlans from "../hooks/usePlans";
 import Typography from "@material-ui/core/Typography";
@@ -488,6 +488,16 @@ const MainListItems = (props) => {
               to="/queues"
               primary={i18n.t("mainDrawer.listItems.queues")}
               icon={<AccountTreeOutlinedIcon />}
+            />
+            <ListItemLink
+              to="/close-reasons"
+              primary={i18n.t("mainDrawer.listItems.closeReasons")}
+              icon={<AssignmentTurnedInIcon />}
+            />
+            <ListItemLink
+              to="/closure-reports"
+              primary={i18n.t("mainDrawer.listItems.closureReports")}
+              icon={<AssessmentIcon />}
             />
             <ListItemLink
               to="/users"

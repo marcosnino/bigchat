@@ -24,8 +24,6 @@ import {
   InputLabel,
   Chip,
   CircularProgress,
-  Snackbar,
-  Box,
 } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 import SaveIcon from "@material-ui/icons/Save";

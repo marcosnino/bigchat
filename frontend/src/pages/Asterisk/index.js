@@ -43,7 +43,6 @@ import {
   PersonAdd,
   Settings,
   Refresh,
-  PlayArrow,
 } from "@material-ui/icons";
 
 import MainContainer from "../../components/MainContainer";

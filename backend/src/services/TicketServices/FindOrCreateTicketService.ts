@@ -6,6 +6,10 @@ import ShowTicketService from "./ShowTicketService";
 import FindOrCreateATicketTrakingService from "./FindOrCreateATicketTrakingService";
 import Setting from "../../models/Setting";
 import Whatsapp from "../../models/Whatsapp";
+import getNextQueueUser from "../../helpers/GetNextQueueUser";
+import Queue from "../../models/Queue";
+import User from "../../models/User";
+import Tag from "../../models/Tag";
 
 interface TicketData {
   status?: string;
@@ -37,7 +41,22 @@ const FindOrCreateTicketService = async (
   }
 
   if (ticket?.status === "closed") {
-    await ticket.update({ queueId: null, userId: null });
+    let previousQueueId = ticket.queueId;
+    if (!previousQueueId) {
+      const reopenWhatsapp = await Whatsapp.findOne({ where: { id: whatsappId } });
+      if (reopenWhatsapp) {
+        const whatsappQueues = await reopenWhatsapp.$get("queues");
+        previousQueueId = whatsappQueues?.[0]?.id || null;
+      }
+    }
+
+    await ticket.update({ status: "pending", queueId: previousQueueId, userId: null });
+    await FindOrCreateATicketTrakingService({
+      ticketId: ticket.id,
+      companyId,
+      whatsappId: ticket.whatsappId,
+      userId: ticket.userId
+    });
   }
 
   if (!ticket && groupContact) {
@@ -53,7 +72,7 @@ const FindOrCreateTicketService = async (
         status: "pending",
         userId: null,
         unreadMessages,
-        queueId: null,
+        queueId: ticket.queueId,
         companyId
       });
       await FindOrCreateATicketTrakingService({
@@ -88,7 +107,7 @@ const FindOrCreateTicketService = async (
         status: "pending",
         userId: null,
         unreadMessages,
-        queueId: null,
+        queueId: ticket.queueId,
         companyId
       });
       await FindOrCreateATicketTrakingService({
@@ -135,7 +154,7 @@ const FindOrCreateTicketService = async (
     if (!autoAcceptSetting || autoAcceptSetting.value !== "disabled") {
       await ticket.update({
         status: "open",
-        userId: null // Deixa sem usuário específico, pode ser atribuído posteriormente
+        userId: null
       });
     }
     
@@ -147,7 +166,44 @@ const FindOrCreateTicketService = async (
     });
   }
 
-  ticket = await ShowTicketService(ticket.id, companyId);
+  if (ticket.queueId && !ticket.userId) {
+    const nextUserId = await getNextQueueUser(ticket.queueId, whatsappId);
+    if (nextUserId) {
+      await ticket.update({ userId: nextUserId, status: "open" });
+    }
+  }
+
+  // Reload com includes necessários (sem usar ShowTicketService para evitar LOCK em LEFT JOIN)
+  await ticket.reload({
+    include: [
+      {
+        model: Contact,
+        as: "contact",
+        attributes: ["id", "name", "number", "email", "profilePicUrl"],
+        include: ["extraInfo"]
+      },
+      {
+        model: User,
+        as: "user",
+        attributes: ["id", "name"]
+      },
+      {
+        model: Queue,
+        as: "queue",
+        attributes: ["id", "name", "color"]
+      },
+      {
+        model: Whatsapp,
+        as: "whatsapp",
+        attributes: ["id", "name"]
+      },
+      {
+        model: Tag,
+        as: "tags",
+        attributes: ["id", "name", "color"]
+      }
+    ]
+  });
 
   return ticket;
 };

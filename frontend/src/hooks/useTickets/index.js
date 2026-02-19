@@ -38,11 +38,13 @@ const useTickets = ({
               withUnreadMessages,
             },
           });
-          setTickets(data.tickets);
-          setHasMore(data.hasMore);
+          setTickets(data?.tickets || []);
+          setHasMore(data?.hasMore || false);
           setLoading(false);
         } catch (err) {
           setLoading(false);
+          setTickets([]);
+          setHasMore(false);
           toastError(err);
         }
       };

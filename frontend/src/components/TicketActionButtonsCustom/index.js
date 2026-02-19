@@ -1,8 +1,8 @@
 import React, { useContext, useState } from "react";
 import { useHistory } from "react-router-dom";
 
-import { makeStyles, createTheme, ThemeProvider } from "@material-ui/core/styles";
-import { IconButton, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
+import { IconButton, Button } from "@material-ui/core";
 import { MoreVert, Replay } from "@material-ui/icons";
 
 import { i18n } from "../../translate/i18n";
@@ -12,13 +12,13 @@ import ButtonWithSpinner from "../ButtonWithSpinner";
 import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import { TicketsContext } from "../../context/Tickets/TicketsContext";
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import UndoRoundedIcon from '@material-ui/icons/UndoRounded';
 import DoneAllIcon from '@material-ui/icons/DoneAll';
 import CloseIcon from '@material-ui/icons/Close';
 import ThumbUpIcon from '@material-ui/icons/ThumbUp';
 import Tooltip from '@material-ui/core/Tooltip';
-import { green, red, blue } from '@material-ui/core/colors';
+import { green, red } from '@material-ui/core/colors';
+import CloseReasonDialog from "../CloseReasonDialog";
 
 
 const useStyles = makeStyles(theme => ({
@@ -74,7 +74,7 @@ const TicketActionButtonsCustom = ({ ticket }) => {
 	const history = useHistory();
 	const [anchorEl, setAnchorEl] = useState(null);
 	const [loading, setLoading] = useState(false);
-	const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+	const [closeReasonDialogOpen, setCloseReasonDialogOpen] = useState(false);
 	const ticketOptionsMenuOpen = Boolean(anchorEl);
 	const { user } = useContext(AuthContext);
 	const { setCurrentTicket } = useContext(TicketsContext);
@@ -87,16 +87,20 @@ const TicketActionButtonsCustom = ({ ticket }) => {
 		setAnchorEl(null);
 	};
 
-	const handleUpdateTicketStatus = async (e, status, userId) => {
+	const handleUpdateTicketStatus = async (e, status, userId, closeReasonId) => {
 		setLoading(true);
 		try {
-			await api.put(`/tickets/${ticket.id}`, {
+			const payload = {
 				status: status,
 				userId: userId || null,
 				useIntegration: status === "closed" ? false : ticket.useIntegration,
 				promptId: status === "closed" ? false : ticket.promptId,
-				integrationId: status === "closed" ? false : ticket.integrationId
-			});
+				integrationId: status === "closed" ? false : ticket.integrationId,
+			};
+			if (status === "closed") {
+				payload.closeReasonId = closeReasonId;
+			}
+			await api.put(`/tickets/${ticket.id}`, payload);
 
 			setLoading(false);
 			if (status === "open") {
@@ -111,17 +115,17 @@ const TicketActionButtonsCustom = ({ ticket }) => {
 		}
 	};
 
-	const handleConfirmClose = () => {
-		setConfirmCloseOpen(true);
+	const handleOpenCloseReasonDialog = () => {
+		setCloseReasonDialogOpen(true);
 	};
 
-	const handleCloseConfirmDialog = () => {
-		setConfirmCloseOpen(false);
+	const handleCloseReasonDialog = () => {
+		setCloseReasonDialogOpen(false);
 	};
 
-	const handleConfirmedClose = (e) => {
-		setConfirmCloseOpen(false);
-		handleUpdateTicketStatus(e, "closed", user?.id);
+	const handleConfirmCloseReason = (closeReasonId) => {
+		setCloseReasonDialogOpen(false);
+		handleUpdateTicketStatus(null, "closed", user?.id, closeReasonId);
 	};
 
 	return (
@@ -155,7 +159,7 @@ const TicketActionButtonsCustom = ({ ticket }) => {
 							variant="contained"
 							size="small"
 							className={classes.resolveBtn}
-							onClick={handleConfirmClose}
+							onClick={handleOpenCloseReasonDialog}
 							startIcon={<DoneAllIcon style={{ fontSize: 18 }} />}
 							disabled={loading}
 						>
@@ -166,7 +170,7 @@ const TicketActionButtonsCustom = ({ ticket }) => {
 					<Tooltip title={i18n.t("ticketActionButtons.closeChat")}>
 						<IconButton
 							size="small"
-							onClick={handleConfirmClose}
+							onClick={handleOpenCloseReasonDialog}
 							style={{ color: red[500] }}
 						>
 							<CloseIcon />
@@ -200,28 +204,12 @@ const TicketActionButtonsCustom = ({ ticket }) => {
 			)}
 
 			{/* Confirmation Dialog for Close/End */}
-			<Dialog
-				open={confirmCloseOpen}
-				onClose={handleCloseConfirmDialog}
-				aria-labelledby="confirm-close-dialog"
-			>
-				<DialogTitle id="confirm-close-dialog">
-					{i18n.t("ticketActionButtons.confirmClose.title")}
-				</DialogTitle>
-				<DialogContent>
-					<DialogContentText>
-						{i18n.t("ticketActionButtons.confirmClose.message")}
-					</DialogContentText>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleCloseConfirmDialog} color="default">
-						{i18n.t("ticketActionButtons.confirmClose.cancel")}
-					</Button>
-					<Button onClick={handleConfirmedClose} color="secondary" variant="contained" autoFocus>
-						{i18n.t("ticketActionButtons.confirmClose.confirm")}
-					</Button>
-				</DialogActions>
-			</Dialog>
+			<CloseReasonDialog
+				open={closeReasonDialogOpen}
+				onClose={handleCloseReasonDialog}
+				onConfirm={handleConfirmCloseReason}
+				queueId={ticket?.queue?.id || ticket?.queueId}
+			/>
 		</div>
 	);
 };

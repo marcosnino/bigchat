@@ -59,6 +59,10 @@ class User extends Model<User> {
   @Column
   online: boolean;
 
+  @Default(false)
+  @Column
+  validated: boolean;
+
   @CreatedAt
   createdAt: Date;
 

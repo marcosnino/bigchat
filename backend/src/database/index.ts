@@ -17,6 +17,7 @@ import Help from "../models/Help";
 import TicketTraking from "../models/TicketTraking";
 import UserRating from "../models/UserRating";
 import QueueOption from "../models/QueueOption";
+import CloseReason from "../models/CloseReason";
 import Schedule from "../models/Schedule";
 import Tag from "../models/Tag";
 import TicketTag from "../models/TicketTag";
@@ -42,6 +43,7 @@ import Call from "../models/Call";
 import Extension from "../models/Extension";
 import ClosedTicketHistory from "../models/ClosedTicketHistory";
 import FlowChat from "../models/FlowChat";
+import UserWhatsappQueue from "../models/UserWhatsappQueue";
 
 // eslint-disable-next-line
 const dbConfig = require("../config/database");
@@ -68,6 +70,7 @@ const models = [
   TicketTraking,
   UserRating,
   QueueOption,
+  CloseReason,
   Schedule,
   Tag,
   TicketTag,
@@ -93,6 +96,7 @@ const models = [
   Extension,
   ClosedTicketHistory,
   FlowChat,
+  UserWhatsappQueue,
 ];
 
 sequelize.addModels(models);

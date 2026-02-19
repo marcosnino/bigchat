@@ -34,6 +34,16 @@ const QR_MAX_RETRIES = 8;
 const RECONNECT_BASE_DELAY_MS = 5000;
 const RECONNECT_MAX_DELAY_MS = 60000;
 const CLIENT_INIT_TIMEOUT_MS = 300000;
+const LOCK_ARTIFACTS = [
+  "SingletonLock",
+  "SingletonCookie",
+  "SingletonSocket",
+  "SingletonSharedMemoryLock",
+  path.join("Default", "LOCK"),
+  path.join("Default", "SingletonLock"),
+  path.join("Default", "Preferences.lock"),
+  "DevToolsActivePort"
+];
 
 // Garantir diretório de sessões
 if (!fs.existsSync(SESSIONS_PATH)) {
@@ -312,12 +322,14 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<WWJSSession> => 
 
       // ─── Ready ────────────────────────────────────
       client.on("ready", async () => {
-        logger.info(`[WWJS] 🟢 Sessão "${name}" PRONTA (multi-device)`);
+        logger.info(`[WWJS | READY] 🟢 Sessão "${name}" PRONTA (multi-device) - ID: ${id}`);
 
         client.isReady = true;
         sessions.set(id, client);
         qrRetries.set(id, 0);
         reconnectAttempts.set(id, 0);
+        
+        logger.info(`[WWJS | READY] Contadores resetados: qrRetries=0, reconnectAttempts=0`);
 
         clearTimeout(initTimeout);
 
@@ -336,8 +348,11 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<WWJSSession> => 
               platform: info?.platform
             })
           });
+          
+          logger.info(`[WWJS | READY] Status atualizado: CONNECTED | Número: ${wid?.user}`);
+          logger.info(`[WWJS | READY] 🎉 "${name}" totalmente operacional e pronto para receber/enviar mensagens`);
         } catch (e) {
-          logger.warn(`[WWJS] Erro ao atualizar info da sessão: ${e}`);
+          logger.warn(`[WWJS | READY] ⚠️  Erro ao atualizar info da sessão: ${e}`);
         }
 
         emitSession(io, companyId, whatsapp);
@@ -388,14 +403,18 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<WWJSSession> => 
 
       // ─── Desconectado ─────────────────────────────
       client.on("disconnected", async (reason: string) => {
-        logger.warn(`[WWJS] 🔴 Sessão "${name}" desconectada: ${reason}`);
+        logger.warn(`[WWJS | DISCONNECT] 🔴 Sessão "${name}" desconectada: ${reason}`);
+        logger.warn(`[WWJS | DISCONNECT] WhatsApp ID: ${id} | Company: ${companyId}`);
 
         client.isReady = false;
 
         try {
           await whatsapp.update({ status: "DISCONNECTED", qrcode: "" });
           emitSession(io, companyId, whatsapp);
-        } catch (e) {}
+          logger.info(`[WWJS | DISCONNECT] Status atualizado no banco para DISCONNECTED`);
+        } catch (e) {
+          logger.error(`[WWJS | DISCONNECT] Erro ao atualizar status: ${e}`);
+        }
 
         clearTimeout(initTimeout);
 
@@ -403,18 +422,22 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<WWJSSession> => 
         try {
           (client as any).removeAllListeners();
           await client.destroy();
+          logger.debug(`[WWJS | DISCONNECT] Client destruído com sucesso`);
         } catch (e) {
-          logger.debug(`[WWJS] Erro ao destruir client na desconexão: ${e}`);
+          logger.debug(`[WWJS | DISCONNECT] Erro ao destruir client: ${e}`);
         }
         sessions.delete(id);
 
         if (reason === "LOGOUT") {
-          logger.info(`[WWJS] Logout manual de "${name}", limpando sessão`);
+          logger.info(`[WWJS | DISCONNECT] Logout manual de "${name}", limpando sessão`);
           cleanSessionFiles(id, true);
+          reconnectAttempts.delete(id);
+          reconnectTimers.delete(id);
           return;
         }
 
         // Reconexão automática com backoff
+        logger.info(`[WWJS | DISCONNECT] Iniciando processo de reconexão automática para "${name}"`);
         scheduleReconnect(id, companyId, name);
       });
 
@@ -508,13 +531,19 @@ const cleanSessionFiles = (whatsappId: number, removeAll: boolean): void => {
         }
       }
     } else {
-      const lockFile = path.join(fullPath, "SingletonLock");
-      if (fs.existsSync(lockFile)) {
+      for (const relativeLock of LOCK_ARTIFACTS) {
+        const lockPath = path.join(fullPath, relativeLock);
         try {
-          fs.rmSync(lockFile, { force: true });
-          logger.info(`[WWJS] Lock removido: ${dir}/SingletonLock`);
-        } catch (e) {
-          logger.debug(`[WWJS] Erro ao remover lock: ${e}`);
+          // Usar lstatSync em vez de existsSync para detectar broken symlinks
+          // (SingletonLock do Chromium é um symlink que fica quebrado após restart)
+          fs.lstatSync(lockPath);
+          fs.rmSync(lockPath, { force: true });
+          logger.info(`[WWJS] Lock removido: ${path.join(dir, relativeLock)}`);
+        } catch (e: any) {
+          // ENOENT = arquivo realmente não existe, ignorar silenciosamente
+          if (e.code !== "ENOENT") {
+            logger.debug(`[WWJS] Erro ao remover lock ${relativeLock}: ${e}`);
+          }
         }
       }
     }
@@ -532,8 +561,23 @@ const scheduleReconnect = (
   const attempt = (reconnectAttempts.get(whatsappId) || 0) + 1;
   reconnectAttempts.set(whatsappId, attempt);
 
+  logger.info(`[WWJS | RECONNECT] 🔄 Tentativa ${attempt} de reconexão para "${name}"`);
+
   if (attempt > 10) {
-    logger.error(`[WWJS] Máximo de reconexões atingido para "${name}" (${attempt}). Desistindo.`);
+    logger.error(`[WWJS | RECONNECT] ❌ Máximo de reconexões atingido para "${name}" (${attempt}). Desistindo.`);
+    logger.error(`[WWJS | RECONNECT] Por favor, escaneie o QR Code manualmente.`);
+    
+    // Notificar via Socket.IO
+    const io = getIO();
+    io.to(`company-${companyId}-mainchannel`).emit(
+      `company-${companyId}-whatsapp-reconnect-failed`,
+      { 
+        whatsappId,
+        name,
+        message: `Falha ao reconectar após ${attempt} tentativas. Por favor, reconecte manualmente.`
+      }
+    );
+    
     return;
   }
 
@@ -542,38 +586,54 @@ const scheduleReconnect = (
     RECONNECT_MAX_DELAY_MS
   );
 
-  logger.info(`[WWJS] 🔄 Reconexão de "${name}" em ${delay / 1000}s (tentativa ${attempt})`);
+  logger.info(`[WWJS | RECONNECT] 📅 Agendando reconexão de "${name}" em ${delay / 1000}s (tentativa ${attempt}/10)`);
 
   const oldTimer = reconnectTimers.get(whatsappId);
-  if (oldTimer) clearTimeout(oldTimer);
+  if (oldTimer) {
+    clearTimeout(oldTimer);
+    logger.debug(`[WWJS | RECONNECT] Timer anterior cancelado`);
+  }
 
   const timer = setTimeout(async () => {
     reconnectTimers.delete(whatsappId);
+    logger.info(`[WWJS | RECONNECT] ⚡ Iniciando reconexão agora para "${name}"`);
 
     try {
       const freshWhatsapp = await Whatsapp.findByPk(whatsappId);
       if (!freshWhatsapp) {
-        logger.warn(`[WWJS] WhatsApp ${whatsappId} não existe mais no banco`);
+        logger.warn(`[WWJS | RECONNECT] WhatsApp ${whatsappId} não existe mais no banco`);
+        reconnectAttempts.delete(whatsappId);
         return;
       }
 
       if (freshWhatsapp.status === "CONNECTED") {
-        logger.info(`[WWJS] "${name}" já CONNECTED, cancelando reconexão`);
+        logger.info(`[WWJS | RECONNECT] ✓ "${name}" já está CONNECTED, cancelando reconexão`);
+        reconnectAttempts.delete(whatsappId);
         return;
       }
 
+      logger.info(`[WWJS | RECONNECT] Importando StartWhatsAppSession...`);
       const StartWhatsAppSession = (
         await import("../services/WbotServices/StartWhatsAppSession-wwjs")
       ).default;
 
+      logger.info(`[WWJS | RECONNECT] Executando StartWhatsAppSession para "${name}"...`);
       await StartWhatsAppSession(freshWhatsapp);
+      
+      logger.info(`[WWJS | RECONNECT] ✅ Reconexão bem-sucedida para "${name}"`);
+      reconnectAttempts.delete(whatsappId);
+      
     } catch (err) {
-      logger.error(`[WWJS] Falha na reconexão de "${name}": ${err}`);
+      logger.error(`[WWJS | RECONNECT] ❌ Falha na reconexão de "${name}": ${err}`);
+      logger.error(`[WWJS | RECONNECT] Stack: ${(err as Error).stack}`);
+      
+      // Tentar novamente
       scheduleReconnect(whatsappId, companyId, name);
     }
   }, delay);
 
   reconnectTimers.set(whatsappId, timer);
+  logger.debug(`[WWJS | RECONNECT] Timer ${timer} agendado para WhatsApp ${whatsappId}`);
 };
 
 export default {

@@ -21,7 +21,6 @@ import toastError from "../../errors/toastError";
 import ColorPicker from "../ColorPicker";
 import {
   FormControl,
-  Grid,
   IconButton,
   InputAdornment,
   InputLabel,

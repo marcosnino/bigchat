@@ -46,6 +46,10 @@ const AuthUserService = async ({
     throw new AppError("ERR_INVALID_CREDENTIALS", 401);
   }
 
+  if (user.profile === "user" && !user.validated) {
+    throw new AppError("ERR_INVALID_CREDENTIALS", 401);
+  }
+
   const token = createAccessToken(user);
   const refreshToken = createRefreshToken(user);
 

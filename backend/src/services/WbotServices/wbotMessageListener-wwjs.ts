@@ -44,10 +44,14 @@ import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketServi
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import FindOrCreateATicketTrakingService from "../TicketServices/FindOrCreateATicketTrakingService";
 import formatBody from "../../helpers/Mustache";
+import MessageSemaphoreService from "../MessageServices/MessageSemaphoreService";
 
 const writeFileAsync = promisify(writeFile);
 const mkdirAsync = promisify(mkdir);
 const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
+
+// Set para rastrear mensagens sendo processadas (evita race conditions)
+const processingMessages = new Set<string>();
 
 export const isNumeric = (value: string): boolean => /^-?\d+$/.test(value);
 
@@ -331,11 +335,17 @@ const createMessage = async (
       messageData,
       companyId
     });
+    logger.info(`[WWJS | MESSAGE] Mensagem criada no banco: ${msg.id.id} - Tipo: ${messageData.mediaType} - fromMe: ${msg.fromMe}`);
     return created;
   } catch (err: any) {
     // SequelizeUniqueConstraintError → mensagem duplicada, ignorar
     if (err.name === "SequelizeUniqueConstraintError") {
-      logger.debug(`[WWJS] Mensagem ${msg.id.id} duplicada, ignorando`);
+      logger.warn(`[WWJS | MESSAGE] Mensagem ${msg.id.id} duplicada detectada, atualizando ACK apenas`);
+      // Atualizar ACK se mudou
+      await MessageModel.update(
+        { ack: msg.ack },
+        { where: { id: msg.id.id } }
+      );
       return null;
     }
     throw err;
@@ -352,6 +362,8 @@ const handleMessage = async (
   companyId: number
 ): Promise<void> => {
   try {
+    logger.info(`[WWJS | HANDLER] 📥 Nova mensagem recebida: ${msg.id.id} | From: ${msg.from} | Type: ${msg.type} | fromMe: ${msg.fromMe}`);
+    
     // ─── Filtros iniciais ────────────────────────────
     if (
       msg.from === "status@broadcast" ||
@@ -361,16 +373,28 @@ const handleMessage = async (
       msg.type === "call_log" ||
       msg.type === "notification"
     ) {
+      logger.debug(`[WWJS | HANDLER] ⏭️  Mensagem filtrada (tipo: ${msg.type})`);
       return;
     }
+
+    // ─── Prevenir race condition com lock em memória ────
+    const msgId = msg.id.id;
+    if (processingMessages.has(msgId)) {
+      logger.warn(`[WWJS | HANDLER] ⚠️  Mensagem ${msgId} já está sendo processada (race condition), ignorando`);
+      return;
+    }
+    processingMessages.add(msgId);
+    logger.debug(`[WWJS | HANDLER] 🔒 Lock adquirido para mensagem ${msgId}`);
 
     // Filtrar grupos
     const isGroup = isGroupJid(msg.from);
     if (isGroup) {
+      logger.debug(`[WWJS | HANDLER] 👥 Mensagem de grupo detectada: ${msg.from}`);
       const groupSetting = await Setting.findOne({
         where: { companyId, key: "acceptGroupMessages" }
       });
       if (!groupSetting || groupSetting.value === "disabled") {
+        logger.info(`[WWJS | HANDLER] ❌ Mensagens de grupo desabilitadas, ignorando`);
         return;
       }
     }
@@ -380,7 +404,7 @@ const handleMessage = async (
       where: { id: msg.id.id }
     });
     if (existingMsg) {
-      logger.debug(`[WWJS] Mensagem ${msg.id.id} já existe, ignorando`);
+      logger.warn(`[WWJS | HANDLER] ⚠️  Mensagem ${msg.id.id} duplicada no banco, ignorando`);
       return;
     }
 
@@ -388,15 +412,71 @@ const handleMessage = async (
     let whatsapp;
     try {
       whatsapp = await ShowWhatsAppService(wbot.id!, companyId);
+      logger.info(`[WWJS | HANDLER] 📱 WhatsApp encontrado: ${whatsapp.name} (ID: ${whatsapp.id})`);
     } catch (err) {
-      logger.error(`[WWJS] WhatsApp ${wbot.id} não encontrado`);
+      logger.error(`[WWJS | HANDLER] ❌ WhatsApp ${wbot.id} não encontrado no banco`);
       return;
     }
 
     // ─── Obter contato ───────────────────────────────
-    const msgContact = await getContactSafe(msg);
+    // Para mensagens fromMe, o contato relevante é o DESTINATÁRIO (msg.to)
+    // Para mensagens recebidas, o contato relevante é o REMETENTE (msg.from)
+    // Resolve LID (@lid) para número real via wbot.getContactById
+    let msgContact: WWJSContact | null;
+
+    if (msg.fromMe && !isGroup) {
+      logger.info(`[WWJS | HANDLER] fromMe=true, buscando contato do destinatario: ${msg.to}`);
+      
+      // Tentar resolver via wbot.getContactById (resolve LID -> número real)
+      try {
+        const resolvedContact = await wbot.getContactById(msg.to);
+        if (resolvedContact?.id?._serialized) {
+          msgContact = resolvedContact;
+          logger.info(`[WWJS | HANDLER] Contato resolvido via getContactById: ${resolvedContact.id._serialized} (${resolvedContact.pushname || resolvedContact.name || 'sem nome'})`);
+        } else {
+          msgContact = null;
+        }
+      } catch (err: any) {
+        logger.warn(`[WWJS | HANDLER] getContactById falhou para ${msg.to}: ${err.message}`);
+        msgContact = null;
+      }
+
+      // Fallback: tentar obter do chat
+      if (!msgContact) {
+        try {
+          const chatForContact = await msg.getChat();
+          const chatContact = (chatForContact as any)?.contact;
+          if (chatContact?.id?._serialized) {
+            msgContact = chatContact;
+            logger.info(`[WWJS | HANDLER] Contato obtido via chat.contact: ${chatContact.id._serialized}`);
+          }
+        } catch (err2: any) {
+          logger.warn(`[WWJS | HANDLER] chat.contact falhou: ${err2.message}`);
+        }
+      }
+
+      // Último fallback: contato sintético
+      if (!msgContact) {
+        const toNumber = getContactNumber(msg.to);
+        msgContact = {
+          id: { _serialized: msg.to, user: toNumber, server: "c.us" },
+          pushname: toNumber,
+          name: toNumber,
+          number: toNumber,
+          isGroup: false,
+          isMyContact: false,
+          isUser: true,
+          isWAContact: true,
+          getProfilePicUrl: async () => ""
+        } as unknown as WWJSContact;
+        logger.info(`[WWJS | HANDLER] Usando contato sintetico: ${toNumber}`);
+      }
+    } else {
+      msgContact = await getContactSafe(msg);
+    }
+
     if (!msgContact) {
-      logger.error(`[WWJS] Impossível obter contato de ${msg.from}, ignorando`);
+      logger.error(`[WWJS] Impossível obter contato de ${msg.fromMe ? msg.to : msg.from}, ignorando`);
       return;
     }
 
@@ -452,17 +532,35 @@ const handleMessage = async (
       msg.type !== "vcard" &&
       msg.type !== "multi_vcard"
     ) {
+      logger.info(`[WWJS | HANDLER] 📎 Baixando mídia (tipo: ${msg.type})...`);
       const media = await downloadMediaWithRetry(msg, 3);
 
       if (media) {
         const saved = await saveMedia(media, msg.id.id, companyId);
         mediaFileName = saved.savedFileName;
         mediaType = saved.mediaType;
+        logger.info(`[WWJS | HANDLER] ✓ Mídia salva: ${mediaFileName} (${mediaType})`);
+      } else {
+        logger.warn(`[WWJS | HANDLER] ⚠️  Falha ao baixar mídia após 3 tentativas`);
       }
     }
 
     // ─── Criar mensagem no banco ─────────────────────
-    await createMessage(msg, ticket, contact, companyId, mediaFileName, mediaType);
+    const createdMessage = await createMessage(msg, ticket, contact, companyId, mediaFileName, mediaType);
+
+    // ─── Processar semáforo (indicadores visuais) ────
+    if (createdMessage) {
+      logger.info(`[WWJS | SEMÁFORO] Processando mensagem ${createdMessage.id} - fromMe: ${msg.fromMe} - Ticket: ${ticket.id}`);
+      await MessageSemaphoreService.processMessage({
+        messageId: createdMessage.id,
+        ticketId: ticket.id,
+        fromMe: msg.fromMe,
+        companyId
+      }).catch(semErr => {
+        logger.error(`[WWJS | SEMÁFORO] Erro ao processar semáforo: ${semErr.message}`);
+        // Não bloqueia o fluxo se o semáforo falhar
+      });
+    }
 
     // ─── Atualizar ticket ────────────────────────────
     const lastMsg = getReadableBody(msg).substring(0, 255) ||
@@ -499,6 +597,9 @@ const handleMessage = async (
     logger.error(`[WWJS] Erro ao processar mensagem: ${err.message}`);
     logger.error(`[WWJS] Stack: ${err.stack}`);
     Sentry.captureException(err);
+  } finally {
+    // Remover lock de processamento
+    processingMessages.delete(msg.id.id);
   }
 };
 

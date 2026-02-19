@@ -190,7 +190,7 @@ const TicketsListCustom = (props) => {
   useEffect(() => {
     const queueIds = queues.map((q) => q.id);
     const filteredTickets = tickets.filter(
-      (t) => queueIds.indexOf(t.queueId) > -1
+      (t) => queueIds.indexOf(t.queueId) > -1 || t.userId === user.id || !t.queueId
     );
 
     if (profile === "user") {
@@ -198,7 +198,7 @@ const TicketsListCustom = (props) => {
     } else {
       dispatch({ type: "LOAD_TICKETS", payload: tickets });
     }
-  }, [tickets, status, searchParam, queues, profile]);
+  }, [tickets, status, searchParam, queues, profile, user.id]);
 
   useEffect(() => {
     const companyId = localStorage.getItem("companyId");

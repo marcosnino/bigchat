@@ -564,10 +564,6 @@ const messages = {
           canceled: "Cancelada",
           completed: "Concluída",
         },
-        direction: {
-          inbound: "Entrada",
-          outbound: "Saída",
-        },
       },
       qrCodeModal: {
         title: "Utilize o seu WhatsApp:",
@@ -892,6 +888,25 @@ const messages = {
         },
         success: "Tag salvo com sucesso.",
       },
+      closeReasonModal: {
+        title: {
+          add: "Novo motivo de encerramento",
+          edit: "Editar motivo de encerramento",
+        },
+        form: {
+          name: "Nome",
+          description: "Descricao",
+          queue: "Fila",
+          queuePlaceholder: "Selecione uma fila",
+          isActive: "Ativo",
+        },
+        buttons: {
+          okAdd: "Adicionar",
+          okEdit: "Salvar",
+          cancel: "Cancelar",
+        },
+        success: "Motivo salvo com sucesso.",
+      },
       chat: {
         toasts: {
           fillTitle: "Por favor, preencha o título da conversa.",
@@ -975,6 +990,10 @@ const messages = {
           closed: "Finalizar",
           reopen: "Reabrir",
         },
+        status: {
+          replied: "RESPONDIDO",
+          waitingReply: "AGUARDANDO",
+        },
       },
       ticketsListItem: {
         tooltip: {
@@ -1014,6 +1033,8 @@ const messages = {
           contacts: "Contatos",
           queues: "Filas & Chatbot",
           tags: "Tags",
+          closeReasons: "Motivos de encerramento",
+          closureReports: "Relatórios de fechamento",
           administration: "Administração",
           users: "Usuários",
           settings: "Configurações",
@@ -1541,6 +1562,78 @@ const messages = {
           deleted: "Tag excluído com sucesso.",
         },
       },
+      closeReasons: {
+        title: "Motivos de encerramento",
+        searchPlaceholder: "Pesquisar...",
+        confirmationModal: {
+          deleteTitle: "Deseja excluir este motivo?",
+          deleteMessage: "Esta ação não pode ser revertida.",
+        },
+        table: {
+          name: "Nome",
+          description: "Descricao",
+          queue: "Fila",
+          status: "Status",
+          actions: "Ações",
+        },
+        status: {
+          active: "Ativo",
+          inactive: "Inativo",
+        },
+        buttons: {
+          add: "Novo motivo",
+        },
+        toasts: {
+          deleted: "Motivo excluido com sucesso.",
+        },
+      },
+      closureReports: {
+        title: "Relatórios de Fechamento",
+        filters: {
+          startDate: "Data inicial",
+          endDate: "Data final",
+          queue: "Fila",
+          user: "Usuário",
+          whatsapp: "WhatsApp",
+          closeReason: "Motivo de fechamento",
+          all: "Todos",
+        },
+        buttons: {
+          search: "Buscar",
+          clear: "Limpar",
+          export: "Exportar CSV",
+        },
+        summary: {
+          totalTickets: "Total de tickets",
+          avgDuration: "Tempo médio",
+          totalMessages: "Total de mensagens",
+          avgRating: "Avaliação média",
+          byQueue: "Por fila",
+          byCloseReason: "Por motivo de fechamento",
+          byUser: "Por usuário",
+        },
+        table: {
+          contact: "Contato",
+          user: "Usuário",
+          queue: "Fila",
+          closeReason: "Motivo",
+          openedAt: "Aberto em",
+          closedAt: "Fechado em",
+          duration: "Duração",
+          messages: "Mensagens",
+          rating: "Avaliação",
+          rowsPerPage: "Linhas por página",
+        },
+        noData: "Nenhum dado encontrado. Selecione os filtros e clique em Buscar.",
+        errors: {
+          loadFilters: "Erro ao carregar filtros.",
+          loadReport: "Erro ao carregar relatório.",
+          export: "Erro ao exportar relatório.",
+        },
+        messages: {
+          exportSuccess: "Relatório exportado com sucesso.",
+        },
+      },
       settings: {
         schedulesUpdated: "Horários atualizados com sucesso.",
         success: "Configurações salvas com sucesso.",
@@ -1726,6 +1819,21 @@ const messages = {
           cancel: "Cancelar",
         },
       },
+      closeReasonDialog: {
+        title: "Encerrar atendimento",
+        message: "Selecione o motivo de encerramento para continuar.",
+        form: {
+          reason: "Motivo",
+          placeholder: "Selecione um motivo",
+        },
+        buttons: {
+          cancel: "Cancelar",
+          confirm: "Encerrar",
+        },
+        errors: {
+          required: "Selecione um motivo de encerramento.",
+        },
+      },
       fileModal: {
         title: {
           add: "Adicionar lista de arquivos",
@@ -1832,6 +1940,10 @@ const messages = {
             "Erro ao buscar a mensagem no WhtasApp, talvez ela seja muito antiga.",
         ERR_QUEUE_COLOR_ALREADY_EXISTS:
             "Esta cor já está em uso, escolha outra.",
+        ERR_CLOSE_REASON_REQUIRED: "Selecione um motivo de encerramento.",
+        ERR_CLOSE_REASON_QUEUE_REQUIRED:
+          "O motivo de encerramento deve pertencer a fila do ticket.",
+        ERR_CLOSE_REASON_NOT_FOUND: "Motivo de encerramento não encontrado.",
         ERR_WAPP_GREETING_REQUIRED:
             "A mensagem de saudação é obrigatório quando há mais de uma fila.",
       },

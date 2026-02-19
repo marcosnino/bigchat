@@ -899,7 +899,10 @@ const verifyMediaMessage = async (
   };
 
   await ticket.update({
-    lastMessage: body || "Arquivo de mídia"
+    lastMessage: body || "Arquivo de mídia",
+    fromMe: msg.key.fromMe,
+    lastAgentMessageAt: msg.key.fromMe ? new Date() : ticket.lastAgentMessageAt,
+    lastClientMessageAt: !msg.key.fromMe ? new Date() : ticket.lastClientMessageAt
   });
 
   const newMessage = await CreateMessageService({
@@ -908,7 +911,8 @@ const verifyMediaMessage = async (
   });
 
   if (!msg.key.fromMe && ticket.status === "closed") {
-    await ticket.update({ status: "pending" });
+    const previousQueueId = ticket.queueId;
+    await ticket.update({ status: "pending", userId: null, queueId: previousQueueId });
     await ticket.reload({
       include: [
         { model: Queue, as: "queue" },
@@ -967,13 +971,17 @@ export const verifyMessage = async (
   };
 
   await ticket.update({
-    lastMessage: body
+    lastMessage: body,
+    fromMe: msg.key.fromMe,
+    lastAgentMessageAt: msg.key.fromMe ? new Date() : ticket.lastAgentMessageAt,
+    lastClientMessageAt: !msg.key.fromMe ? new Date() : ticket.lastClientMessageAt
   });
 
   await CreateMessageService({ messageData, companyId: ticket.companyId });
 
   if (!msg.key.fromMe && ticket.status === "closed") {
-    await ticket.update({ status: "pending" });
+    const previousQueueId = ticket.queueId;
+    await ticket.update({ status: "pending", userId: null, queueId: previousQueueId });
     await ticket.reload({
       include: [
         { model: Queue, as: "queue" },

@@ -723,6 +723,25 @@ const messages = {
 				},
 				success: "Tag saved successfully.",
 			},
+			closeReasonModal: {
+				title: {
+					add: "New close reason",
+					edit: "Edit close reason",
+				},
+				form: {
+					name: "Name",
+					description: "Description",
+					queue: "Queue",
+					queuePlaceholder: "Select a queue",
+					isActive: "Active",
+				},
+				buttons: {
+					okAdd: "Add",
+					okEdit: "Save",
+					cancel: "Cancel",
+				},
+				success: "Close reason saved successfully.",
+			},
 			chat: {
 				toasts: {
 					fillTitle: "Please fill in the conversation title.",
@@ -805,6 +824,10 @@ const messages = {
 					closed: "Finish",
 					reopen: "Reopen",
 				},
+				status: {
+					replied: "REPLIED",
+					waitingReply: "WAITING",
+				},
 			},
 			ticketsListItem: {
 				tooltip: {
@@ -843,6 +866,8 @@ const messages = {
 					contacts: "Contacts",
 					queues: "Queues & Chatbot",
 					tags: "Tags",
+					closeReasons: "Close Reasons",
+					closureReports: "Closure Reports",
 					administration: "Administration",
 					users: "Users",
 					settings: "Settings",
@@ -1360,6 +1385,78 @@ const messages = {
 					deleted: "Tag deleted successfully.",
 				},
 			},
+			closeReasons: {
+				title: "Close Reasons",
+				searchPlaceholder: "Search...",
+				confirmationModal: {
+					deleteTitle: "Do you want to delete this reason?",
+					deleteMessage: "This action cannot be undone.",
+				},
+				table: {
+					name: "Name",
+					description: "Description",
+					queue: "Queue",
+					status: "Status",
+					actions: "Actions",
+				},
+				status: {
+					active: "Active",
+					inactive: "Inactive",
+				},
+				buttons: {
+					add: "New reason",
+				},
+				toasts: {
+					deleted: "Reason deleted successfully.",
+				},
+			},
+			closureReports: {
+				title: "Closure Reports",
+				filters: {
+					startDate: "Start date",
+					endDate: "End date",
+					queue: "Queue",
+					user: "User",
+					whatsapp: "WhatsApp",
+					closeReason: "Close reason",
+					all: "All",
+				},
+				buttons: {
+					search: "Search",
+					clear: "Clear",
+					export: "Export CSV",
+				},
+				summary: {
+					totalTickets: "Total tickets",
+					avgDuration: "Average time",
+					totalMessages: "Total messages",
+					avgRating: "Average rating",
+					byQueue: "By queue",
+					byCloseReason: "By close reason",
+					byUser: "By user",
+				},
+				table: {
+					contact: "Contact",
+					user: "User",
+					queue: "Queue",
+					closeReason: "Reason",
+					openedAt: "Opened at",
+					closedAt: "Closed at",
+					duration: "Duration",
+					messages: "Messages",
+					rating: "Rating",
+					rowsPerPage: "Rows per page",
+				},
+				noData: "No data found. Select filters and click Search.",
+				errors: {
+					loadFilters: "Error loading filters.",
+					loadReport: "Error loading report.",
+					export: "Error exporting report.",
+				},
+				messages: {
+					exportSuccess: "Report exported successfully.",
+				},
+			},
 			settings: {
 				schedulesUpdated: "Schedules updated successfully.",
 				success: "Settings saved successfully.",
@@ -1542,6 +1639,21 @@ const messages = {
 					cancel: "Cancel",
 				},
 			},
+			closeReasonDialog: {
+				title: "Close ticket",
+				message: "Select a close reason to continue.",
+				form: {
+					reason: "Reason",
+					placeholder: "Select a reason",
+				},
+				buttons: {
+					cancel: "Cancel",
+					confirm: "Close",
+				},
+				errors: {
+					required: "Select a close reason.",
+				},
+			},
 			fileModal: {
 				title: {
 					add: "Add file list",
@@ -1636,6 +1748,9 @@ const messages = {
 				ERR_CREATING_TICKET: "Error creating ticket in database.",
 				ERR_FETCH_WAPP_MSG: "Error fetching WhatsApp message, it might be too old.",
 				ERR_QUEUE_COLOR_ALREADY_EXISTS: "This color is already in use, choose another.",
+				ERR_CLOSE_REASON_REQUIRED: "Select a close reason.",
+				ERR_CLOSE_REASON_QUEUE_REQUIRED: "Close reason must belong to the ticket queue.",
+				ERR_CLOSE_REASON_NOT_FOUND: "Close reason not found.",
 				ERR_WAPP_GREETING_REQUIRED: "Greeting message is required when there is more than one queue.",
 			},
 		}

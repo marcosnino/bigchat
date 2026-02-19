@@ -10,6 +10,20 @@ import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import UpdateTicketService from "../services/TicketServices/UpdateTicketService";
 import ListTicketsServiceKanban from "../services/TicketServices/ListTicketsServiceKanban";
 
+const serializeTicket = (ticket: Ticket) => {
+  const ticketData = ticket.toJSON() as Record<string, any>;
+
+  return {
+    ...ticketData,
+    lastMessage: ticketData.lastMessage || "",
+    tags: ticketData.tags || [],
+    user: ticketData.user || null,
+    queue: ticketData.queue || null,
+    contact: ticketData.contact || null,
+    whatsapp: ticketData.whatsapp || null
+  };
+};
+
 type IndexQuery = {
   searchParam: string;
   pageNumber: string;
@@ -83,7 +97,11 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 
 
   });
-  return res.status(200).json({ tickets, count, hasMore });
+
+  // Serializar os tickets para garantir que campos críticos nunca sejam null
+  const serializedTickets = tickets.map(serializeTicket);
+
+  return res.status(200).json({ tickets: serializedTickets, count, hasMore });
 };
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
@@ -157,15 +175,18 @@ export const kanban = async (req: Request, res: Response): Promise<Response> => 
 
   });
 
-  return res.status(200).json({ tickets, count, hasMore });
+  const serializedTickets = tickets.map(serializeTicket);
+
+  return res.status(200).json({ tickets: serializedTickets, count, hasMore });
 };
 
 export const show = async (req: Request, res: Response): Promise<Response> => {
   const { ticketId } = req.params;
   const { companyId } = req.user;
 
-  const contact = await ShowTicketService(ticketId, companyId);
-  return res.status(200).json(contact);
+  const ticket = await ShowTicketService(ticketId, companyId);
+
+  return res.status(200).json(serializeTicket(ticket));
 };
 
 export const showFromUUID = async (
@@ -176,7 +197,7 @@ export const showFromUUID = async (
 
   const ticket: Ticket = await ShowTicketUUIDService(uuid);
 
-  return res.status(200).json(ticket);
+  return res.status(200).json(serializeTicket(ticket));
 };
 
 export const update = async (

@@ -386,7 +386,7 @@ class UserWhatsappQueueService {
 
       // Buscar usuários que têm acesso à fila
       const usersWithQueueAccess = await User.findAll({
-        where: { companyId },
+        where: { companyId, online: true },
         include: [
           {
             model: Queue,

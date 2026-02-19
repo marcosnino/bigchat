@@ -22,14 +22,9 @@ import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import MessageVariablesPicker from "../MessageVariablesPicker";
-import ButtonWithSpinner from "../ButtonWithSpinner";
 
 import {
-    FormControl,
     Grid,
-    InputLabel,
-    MenuItem,
-    Select,
 } from "@material-ui/core";
 import ConfirmationModal from "../ConfirmationModal";
 

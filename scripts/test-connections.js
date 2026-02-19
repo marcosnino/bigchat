@@ -6,20 +6,30 @@
  */
 
 const path = require('path');
+const { createRequire } = require('module');
 const { execSync } = require('child_process');
 
+const backendRequire = createRequire(path.join(__dirname, '../backend/package.json'));
+
 // Carregar variáveis de ambiente
-require('dotenv').config({ path: path.join(__dirname, '../.env.production') });
+backendRequire('dotenv').config({ path: path.join(__dirname, '../.env.production') });
+
+const resolveLocalHost = (host) => {
+  if (!host) return host;
+  return ["postgres", "redis"].includes(String(host).toLowerCase())
+    ? "127.0.0.1"
+    : host;
+};
 
 async function testDatabaseConnection() {
   console.log('🔍 Testando conexão PostgreSQL...');
   
   try {
     // Usar pg para testar conexão
-    const { Client } = require('pg');
+    const { Client } = backendRequire('pg');
     
     const client = new Client({
-      host: process.env.DB_HOST,
+      host: resolveLocalHost(process.env.DB_HOST),
       port: process.env.DB_PORT,
       user: process.env.DB_USER,
       password: process.env.DB_PASS,
@@ -48,38 +58,37 @@ async function testRedisConnection() {
   console.log('\n🔍 Testando conexão Redis...');
   
   try {
-    const redis = require('redis');
-    
-    // Parsear a URI do Redis
-    const redisURL = process.env.REDIS_URI;
-    const client = redis.createClient({
-      url: redisURL,
-      connectTimeout: 10000
-    });
-    
-    client.on('error', (err) => {
-      console.log('❌ Redis Client Error:', err);
-    });
+    const redisPass = process.env.REDIS_PASSWORD || '';
+    const ping = execSync(
+      `docker exec -i bigchat-redis sh -lc 'redis-cli -a "${redisPass}" PING'`,
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    ).toString().trim();
 
-    await client.connect();
-    const result = await client.ping();
-    
-    if (result === 'PONG') {
-      console.log('✅ Redis: Conexão estabelecida com sucesso');
-      console.log(`   URI: ${redisURL.replace(/\/\/:[^@]*@/, '//***:***@')}`); // Ocultar senha
-      
-      // Testar operações básicas
-      await client.set('bigchat:test', 'connection_test', { EX: 10 });
-      const testValue = await client.get('bigchat:test');
-      
-      if (testValue === 'connection_test') {
-        console.log('✅ Redis: Operações de leitura/escrita funcionando');
-      }
-      
-      await client.del('bigchat:test');
+    if (ping !== 'PONG') {
+      throw new Error(`Resposta inesperada do Redis: ${ping}`);
     }
-    
-    await client.disconnect();
+
+    const setResult = execSync(
+      `docker exec -i bigchat-redis sh -lc 'redis-cli -a "${redisPass}" SET bigchat:test connection_test EX 10'`,
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    ).toString().trim();
+
+    const getValue = execSync(
+      `docker exec -i bigchat-redis sh -lc 'redis-cli -a "${redisPass}" GET bigchat:test'`,
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    ).toString().trim();
+
+    execSync(
+      `docker exec -i bigchat-redis sh -lc 'redis-cli -a "${redisPass}" DEL bigchat:test'`,
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+
+    if (setResult !== 'OK' || getValue !== 'connection_test') {
+      throw new Error('Falha no teste de leitura/escrita Redis');
+    }
+
+    console.log('✅ Redis: Conexão estabelecida com sucesso');
+    console.log('✅ Redis: Operações de leitura/escrita funcionando');
     return true;
     
   } catch (error) {
@@ -93,11 +102,18 @@ async function testSequelizeConnection() {
   console.log('\n🔍 Testando conexão Sequelize...');
   
   try {
-    // Carregar configuração do banco usando o arquivo do projeto
-    const dbConfig = require('../backend/src/config/database');
-    const { Sequelize } = require('sequelize');
-    
-    const sequelize = new Sequelize(dbConfig);
+    const { Sequelize } = backendRequire('sequelize');
+    const sequelize = new Sequelize(
+      process.env.DB_NAME,
+      process.env.DB_USER,
+      process.env.DB_PASS,
+      {
+        dialect: process.env.DB_DIALECT || 'postgres',
+        host: resolveLocalHost(process.env.DB_HOST),
+        port: Number(process.env.DB_PORT || 5432),
+        logging: false,
+      }
+    );
     
     await sequelize.authenticate();
     console.log('✅ Sequelize: Conexão autenticada com sucesso');
@@ -120,7 +136,18 @@ async function testEmailConfiguration() {
   console.log('\n🔍 Testando configuração de email...');
   
   try {
-    const nodemailer = require('nodemailer');
+    const hasDefaultCreds =
+      !process.env.MAIL_USER ||
+      !process.env.MAIL_PASS ||
+      process.env.MAIL_USER.includes('seu@gmail.com') ||
+      process.env.MAIL_PASS.includes('SuaSenha');
+
+    if (hasDefaultCreds) {
+      console.log('⚠️  Email: credenciais padrão detectadas, teste SMTP ignorado');
+      return true;
+    }
+
+    const nodemailer = backendRequire('nodemailer');
     
     const transporter = nodemailer.createTransporter({
       host: process.env.MAIL_HOST,
@@ -151,14 +178,14 @@ async function checkDependencies() {
   console.log('🔍 Verificando dependências...');
   
   const requiredDeps = [
-    'pg', 'redis', 'sequelize', 'nodemailer', 'dotenv'
+    'pg', 'sequelize', 'nodemailer', 'dotenv'
   ];
   
   const missing = [];
   
   for (const dep of requiredDeps) {
     try {
-      require.resolve(dep);
+      backendRequire.resolve(dep);
       console.log(`✅ Dependência encontrada: ${dep}`);
     } catch (error) {
       console.log(`❌ Dependência faltando: ${dep}`);

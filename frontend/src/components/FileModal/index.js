@@ -10,14 +10,12 @@ import {
 import { toast } from "react-toastify";
 
 import {
-    Box,
     Button,
     CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
-    Divider,
     Grid,
     makeStyles,
     TextField
@@ -91,7 +89,7 @@ const FileListSchema = Yup.object().shape({
 const FilesModal = ({ open, onClose, fileListId, reload }) => {
     const classes = useStyles();
     const { user } = useContext(AuthContext);
-    const [ files, setFiles ] = useState([]);
+    const [, setFiles] = useState([]);
     const [selectedFileNames, setSelectedFileNames] = useState([]);
 
 
