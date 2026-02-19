@@ -24,24 +24,32 @@ const ModalImageCors = ({ imageUrl }) => {
 	useEffect(() => {
 		if (!imageUrl) return;
 		const fetchImage = async () => {
-			const { data, headers } = await api.get(imageUrl, {
-				responseType: "blob",
-			});
-			const url = window.URL.createObjectURL(
-				new Blob([data], { type: headers["content-type"] })
-			);
-			setBlobUrl(url);
-			setFetching(false);
+			try {
+				const { data, headers } = await api.get(imageUrl, {
+					responseType: "blob",
+				});
+				const url = window.URL.createObjectURL(
+					new Blob([data], { type: headers["content-type"] })
+				);
+				setBlobUrl(url);
+				setFetching(false);
+			} catch (err) {
+				// Se o fetch via API falhar, usa a URL direta como fallback
+				console.warn("[ModalImageCors] Fetch via API falhou, usando URL direta:", err?.message || err);
+				setFetching(false);
+			}
 		};
 		fetchImage();
 	}, [imageUrl]);
 
+	if (!imageUrl) return null;
+
 	return (
 		<ModalImage
 			className={classes.messageMedia}
-			smallSrcSet={fetching ? imageUrl : blobUrl}
-			medium={fetching ? imageUrl : blobUrl}
-			large={fetching ? imageUrl : blobUrl}
+			smallSrcSet={fetching ? imageUrl : (blobUrl || imageUrl)}
+			medium={fetching ? imageUrl : (blobUrl || imageUrl)}
+			large={fetching ? imageUrl : (blobUrl || imageUrl)}
 			alt="image"
 		/>
 	);
