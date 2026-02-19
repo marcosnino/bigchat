@@ -172,8 +172,10 @@ const getReadableBody = (msg: Message): string => {
     case "live_location": {
       const loc = msg.location;
       if (loc) {
-        const desc = (loc as any).description ? `${(loc as any).description}\n` : "";
-        return `📍 ${desc}https://maps.google.com/?q=${loc.latitude},${loc.longitude}`;
+        const desc = (loc as any).description || `${loc.latitude}, ${loc.longitude}`;
+        const mapLink = `https://maps.google.com/maps?q=${loc.latitude}%2C${loc.longitude}&z=17&hl=pt-BR`;
+        // Formato pipe-delimited compatível com o frontend: image|link|description
+        return `|${mapLink}|${desc}`;
       }
       return "📍 Localização compartilhada";
     }
@@ -324,7 +326,10 @@ const createMessage = async (
     body: body || (mediaFileName ? mediaFileName : ""),
     fromMe: msg.fromMe,
     read: msg.fromMe,
-    mediaType: mediaType || msg.type || "chat",
+    mediaType: mediaType || (() => {
+      if (msg.type === "location" || msg.type === "live_location") return "locationMessage";
+      return msg.type || "chat";
+    })(),
     mediaUrl: fullMediaUrl,
     ack: msg.ack,
     queueId: ticket.queueId || undefined

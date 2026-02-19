@@ -444,15 +444,29 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
 
     if (message.mediaType === "locationMessage" && message.body.split('|').length >= 2) {
       let locationParts = message.body.split('|')
-      let imageLocation = locationParts[0]
-      let linkLocation = locationParts[1]
+      let imageLocation = locationParts[0] ? locationParts[0].trim() : null
+      let linkLocation = locationParts[1] ? locationParts[1].trim() : null
 
       let descriptionLocation = null
 
       if (locationParts.length > 2)
-        descriptionLocation = message.body.split('|')[2]
+        descriptionLocation = locationParts[2].trim()
 
       return <LocationPreview image={imageLocation} link={linkLocation} description={descriptionLocation} />
+    }
+    else if (message.mediaType === "sticker" || message.mediaType === "stickerMessage") {
+      return (
+        <img
+          src={message.mediaUrl}
+          alt="sticker"
+          style={{
+            width: 180,
+            height: 180,
+            objectFit: "contain",
+            backgroundColor: "transparent",
+          }}
+        />
+      );
     }
     /* else if (message.mediaType === "vcard") {
       let array = message.body.split("\n");
@@ -682,6 +696,16 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
           {message.quotedMsg.mediaType === "image"
             && (<ModalImageCors imageUrl={message.quotedMsg.mediaUrl} />)}
 
+          {(message.quotedMsg.mediaType === "sticker" || message.quotedMsg.mediaType === "stickerMessage")
+            && (
+              <img
+                src={message.quotedMsg.mediaUrl}
+                alt="sticker"
+                style={{ width: 60, height: 60, objectFit: "contain" }}
+              />
+            )
+          }
+
           {message.quotedMsg.mediaType === "contactMessage"
             && (
                 <span>{message.quotedMsg.body}</span>
@@ -765,12 +789,12 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                   </div>
                 )}
 
-                {(message.mediaUrl || message.mediaType === "locationMessage" || message.mediaType === "vcard"
+                {(message.mediaUrl || message.mediaType === "locationMessage" || message.mediaType === "vcard" || message.mediaType === "sticker" || message.mediaType === "stickerMessage"
                   //|| message.mediaType === "multi_vcard" 
                 ) && checkMessageMedia(message)}
                 <div className={classes.textContentItem}>
                   {message.quotedMsg && renderQuotedMessage(message)}
-                  <MarkdownWrapper>{message.mediaType === "locationMessage" ? null : message.body}</MarkdownWrapper>
+                  <MarkdownWrapper>{(message.mediaType === "locationMessage" || message.mediaType === "sticker" || message.mediaType === "stickerMessage") ? null : message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
 				    {message.isEdited && <span>Editada </span>}
                     {format(parseISO(message.createdAt), "HH:mm")}
@@ -796,7 +820,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                 >
                   <ExpandMore />
                 </IconButton>
-                {(message.mediaUrl || message.mediaType === "locationMessage" || message.mediaType === "vcard"
+                {(message.mediaUrl || message.mediaType === "locationMessage" || message.mediaType === "vcard" || message.mediaType === "sticker" || message.mediaType === "stickerMessage"
                   //|| message.mediaType === "multi_vcard" 
                 ) && checkMessageMedia(message)}
                 <div
@@ -813,7 +837,7 @@ const MessagesList = ({ ticket, ticketId, isGroup }) => {
                     />
                   )}
                   {message.quotedMsg && renderQuotedMessage(message)}
-                  <MarkdownWrapper>{message.mediaType === "locationMessage" ? null : message.body}</MarkdownWrapper>
+                  <MarkdownWrapper>{(message.mediaType === "locationMessage" || message.mediaType === "sticker" || message.mediaType === "stickerMessage") ? null : message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
 				    {message.isEdited && <span>{i18n.t("messagesList.edited")}</span>}
                     {format(parseISO(message.createdAt), "HH:mm")}

@@ -340,12 +340,15 @@ const getBodyButton = (msg: proto.IWebMessageInfo): string => {
 };
 
 const msgLocation = (image, latitude, longitude) => {
+  const mapLink = `https://maps.google.com/maps?q=${latitude}%2C${longitude}&z=17&hl=pt-BR`;
+  const desc = `${latitude}, ${longitude}`;
+
   if (image) {
     var b64 = Buffer.from(image).toString("base64");
-
-    let data = `data:image/png;base64, ${b64} | https://maps.google.com/maps?q=${latitude}%2C${longitude}&z=17&hl=pt-BR|${latitude}, ${longitude} `;
-    return data;
+    return `data:image/png;base64,${b64}|${mapLink}|${desc}`;
   }
+  // Sem thumbnail — formato pipe-delimited sem imagem
+  return `|${mapLink}|${desc}`;
 };
 
 export const getBodyMessage = (msg: proto.IWebMessageInfo): string | null => {
@@ -382,7 +385,11 @@ export const getBodyMessage = (msg: proto.IWebMessageInfo): string | null => {
         msg.message?.locationMessage?.degreesLatitude,
         msg.message?.locationMessage?.degreesLongitude
       ),
-      liveLocationMessage: `Latitude: ${msg.message?.liveLocationMessage?.degreesLatitude} - Longitude: ${msg.message?.liveLocationMessage?.degreesLongitude}`,
+      liveLocationMessage: msgLocation(
+        msg.message?.liveLocationMessage?.jpegThumbnail,
+        msg.message?.liveLocationMessage?.degreesLatitude,
+        msg.message?.liveLocationMessage?.degreesLongitude
+      ),
       documentMessage: msg.message?.documentMessage?.caption,
       documentWithCaptionMessage:
         msg.message?.documentWithCaptionMessage?.message?.documentMessage
@@ -952,6 +959,10 @@ export const verifyMessage = async (
   const body = getBodyMessage(msg);
   const isEdited = getTypeMessage(msg) == "editedMessage";
 
+  const rawMediaType = getTypeMessage(msg);
+  // Normalizar liveLocationMessage para locationMessage para o frontend
+  const normalizedMediaType = rawMediaType === "liveLocationMessage" ? "locationMessage" : rawMediaType;
+
   const messageData = {
     id: isEdited
       ? msg?.message?.editedMessage?.message?.protocolMessage?.key?.id
@@ -960,7 +971,7 @@ export const verifyMessage = async (
     contactId: msg.key.fromMe ? undefined : contact.id,
     body,
     fromMe: msg.key.fromMe,
-    mediaType: getTypeMessage(msg),
+    mediaType: normalizedMediaType,
     read: msg.key.fromMe,
     quotedMsgId: quotedMsg?.id,
     ack: msg.status,
