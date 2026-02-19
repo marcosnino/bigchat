@@ -24,6 +24,10 @@ const FindOrCreateTicketService = async (
   companyId: number,
   groupContact?: Contact
 ): Promise<Ticket> => {
+  // Flag para controlar se o ticket foi reaberto de "closed"
+  // Tickets reabertos DEVEM ficar em "pending" (aba Aguardando) para triagem manual
+  let wasReopenedFromClosed = false;
+
   let ticket = await Ticket.findOne({
     where: {
       status: {
@@ -41,6 +45,7 @@ const FindOrCreateTicketService = async (
   }
 
   if (ticket?.status === "closed") {
+    wasReopenedFromClosed = true;
     let previousQueueId = ticket.queueId;
     if (!previousQueueId) {
       const reopenWhatsapp = await Whatsapp.findOne({ where: { id: whatsappId } });
@@ -50,12 +55,14 @@ const FindOrCreateTicketService = async (
       }
     }
 
+    // Reabrir como "pending" (Aguardando) sem atribuir usuário
+    // O agente vai ver na aba Aguardando e pode pegar o atendimento manualmente
     await ticket.update({ status: "pending", queueId: previousQueueId, userId: null });
     await FindOrCreateATicketTrakingService({
       ticketId: ticket.id,
       companyId,
       whatsappId: ticket.whatsappId,
-      userId: ticket.userId
+      userId: null
     });
   }
 
@@ -142,22 +149,6 @@ const FindOrCreateTicketService = async (
       queueId: defaultQueueId
     });
     
-    // Verificar se deve aceitar automaticamente o ticket
-    const autoAcceptSetting = await Setting.findOne({
-      where: {
-        companyId,
-        key: "autoAcceptTickets"
-      }
-    });
-    
-    // Se não há configuração, aceitar automaticamente por padrão
-    if (!autoAcceptSetting || autoAcceptSetting.value !== "disabled") {
-      await ticket.update({
-        status: "open",
-        userId: null
-      });
-    }
-    
     await FindOrCreateATicketTrakingService({
       ticketId: ticket.id,
       companyId,
@@ -166,7 +157,9 @@ const FindOrCreateTicketService = async (
     });
   }
 
-  if (ticket.queueId && !ticket.userId) {
+  // Só auto-atribuir para tickets NOVOS (não reabertos e não grupos pendentes)
+  // Tickets reabertos de "closed" ficam em "pending" para triagem manual
+  if (ticket.queueId && !ticket.userId && !wasReopenedFromClosed) {
     const nextUserId = await getNextQueueUser(ticket.queueId, whatsappId);
     if (nextUserId) {
       await ticket.update({ userId: nextUserId, status: "open" });

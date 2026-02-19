@@ -413,6 +413,9 @@ const messages = {
           cancel: "Cancelar",
         },
         success: "WhatsApp salvo com sucesso.",
+        errors: {
+          queueRequired: "Selecione ao menos uma fila para esta conexão.",
+        },
       },
       asterisk: {
         title: "Conexões Asterisk",

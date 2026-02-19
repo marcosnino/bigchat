@@ -477,6 +477,9 @@ const messages = {
           cancel: "Cancelar",
         },
         success: "WhatsApp guardado con éxito.",
+        errors: {
+          queueRequired: "Seleccione al menos una cola para esta conexión.",
+        },
       },
       qrCodeModal: {
         title: "Utilice su WhatsApp:",

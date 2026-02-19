@@ -139,6 +139,12 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   }, []);
 
   const handleSaveWhatsApp = async (values) => {
+    // Validar que pelo menos uma fila foi selecionada
+    if (!selectedQueueIds || selectedQueueIds.length === 0) {
+      toast.error(i18n.t("whatsappModal.errors.queueRequired") || "Selecione ao menos uma fila para esta conexão.");
+      return;
+    }
+
     const whatsappData = {
       ...values, queueIds: selectedQueueIds, transferQueueId: selectedQueueId,
       promptId: selectedPrompt ? selectedPrompt : null

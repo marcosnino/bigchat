@@ -403,6 +403,9 @@ const messages = {
 					cancel: "Cancel",
 				},
 				success: "WhatsApp saved successfully.",
+				errors: {
+					queueRequired: "Please select at least one queue for this connection.",
+				},
 			},
 			qrCodeModal: {
 				title: "Use your WhatsApp:",

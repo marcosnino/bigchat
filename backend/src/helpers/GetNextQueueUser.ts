@@ -51,8 +51,9 @@ const getNextQueueUser = async (
     }
 
     if (users.length === 0) {
+      // Fallback: usuários online que NÃO são admin (mesmo sem vínculo específico com o whatsapp)
       users = [...queue.users]
-        .filter(user => user.online)
+        .filter(user => user.online && user.profile !== "admin")
         .sort((a, b) => a.id - b.id);
     }
 
