@@ -10,6 +10,8 @@ import getNextQueueUser from "../../helpers/GetNextQueueUser";
 import Queue from "../../models/Queue";
 import User from "../../models/User";
 import Tag from "../../models/Tag";
+import { getIO } from "../../libs/socket";
+import { logger } from "../../utils/logger";
 
 interface TicketData {
   status?: string;
@@ -64,6 +66,33 @@ const FindOrCreateTicketService = async (
       whatsappId: ticket.whatsappId,
       userId: null
     });
+
+    // Emitir eventos de socket para transição closed → pending
+    // Sem isso, o frontend não move o ticket para a aba "Aguardando"
+    try {
+      const io = getIO();
+      // Remover da lista de fechados
+      io.to(`company-${companyId}-closed`)
+        .to(`queue-${previousQueueId}-closed`)
+        .emit(`company-${companyId}-ticket`, {
+          action: "delete",
+          ticketId: ticket.id
+        });
+
+      // Adicionar na lista de pendentes (Aguardando)
+      io.to(`company-${companyId}-pending`)
+        .to(`company-${companyId}-notification`)
+        .to(`queue-${previousQueueId}-pending`)
+        .to(`queue-${previousQueueId}-notification`)
+        .to(ticket.id.toString())
+        .emit(`company-${companyId}-ticket`, {
+          action: "update",
+          ticket
+        });
+      logger.info(`[FindOrCreateTicket] Ticket ${ticket.id} reaberto: closed → pending (aguardando)`);
+    } catch (socketErr) {
+      logger.warn(`[FindOrCreateTicket] Erro ao emitir socket para ticket ${ticket.id}: ${socketErr}`);
+    }
   }
 
   if (!ticket && groupContact) {
@@ -162,7 +191,13 @@ const FindOrCreateTicketService = async (
   if (ticket.queueId && !ticket.userId && !wasReopenedFromClosed) {
     const nextUserId = await getNextQueueUser(ticket.queueId, whatsappId);
     if (nextUserId) {
-      await ticket.update({ userId: nextUserId, status: "open" });
+      // Segurança extra: verificar se o usuário selecionado NÃO é admin
+      const assignedUser = await User.findByPk(nextUserId, { attributes: ["id", "profile"] });
+      if (assignedUser && assignedUser.profile?.toLowerCase() !== "admin") {
+        await ticket.update({ userId: nextUserId, status: "open" });
+      } else {
+        logger.warn(`[FindOrCreateTicket] Bloqueado auto-atribuição ao admin (userId: ${nextUserId}) - ticket ${ticket.id} fica em pending`);
+      }
     }
   }
 

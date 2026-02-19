@@ -7,6 +7,7 @@ import { getIO } from "../../libs/socket";
 import GetDefaultWhatsAppByUser from "../../helpers/GetDefaultWhatsAppByUser";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import getNextQueueUser from "../../helpers/GetNextQueueUser";
+import User from "../../models/User";
 
 interface Request {
   contactId: number;
@@ -49,6 +50,14 @@ const CreateTicketService = async ({
       ? Number(whatsappId)
       : undefined;
     assignedUserId = await getNextQueueUser(queueId, whatsappQueueId);
+  }
+
+  // Segurança: nunca auto-atribuir ticket para usuário admin
+  if (assignedUserId) {
+    const targetUser = await User.findByPk(assignedUserId, { attributes: ["id", "profile"] });
+    if (targetUser?.profile?.toLowerCase() === "admin") {
+      assignedUserId = null;
+    }
   }
 
   const [{ id }] = await Ticket.findOrCreate({
